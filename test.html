@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>GolfTracker Test</title>
+  <style>
+    body{background:#060e08;color:#ecfdf5;font-family:sans-serif;padding:24px;}
+    .ok{color:#4ade80;} .err{color:#f87171;} .wait{color:#fbbf24;}
+    div{padding:8px 0;border-bottom:1px solid #173320;font-size:14px;}
+    button{background:#4ade80;color:#000;border:none;padding:12px 24px;border-radius:8px;font-size:14px;cursor:pointer;margin-top:16px;}
+  </style>
+</head>
+<body>
+<h2>⛳ GolfTracker — Verbindungstest</h2>
+<div id="r1" class="wait">⏳ React lädt…</div>
+<div id="r2" class="wait">⏳ Supabase lädt…</div>
+<div id="r3" class="wait">⏳ Supabase Client erstellen…</div>
+<div id="r4" class="wait">⏳ Datenbankverbindung testen…</div>
+<div id="r5" class="wait">⏳ Auth-Status prüfen…</div>
+<div id="result" style="margin-top:16px;font-size:16px;font-weight:600;"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"
+  onload="document.getElementById('r1').innerHTML='✅ React geladen';document.getElementById('r1').className='ok';"
+  onerror="document.getElementById('r1').innerHTML='❌ React FEHLER';document.getElementById('r1').className='err';"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"
+  onload="document.getElementById('r2').innerHTML='✅ Supabase JS geladen';document.getElementById('r2').className='ok';initSupabase();"
+  onerror="document.getElementById('r2').innerHTML='❌ Supabase JS FEHLER — CDN nicht erreichbar';document.getElementById('r2').className='err';"></script>
+
+<script>
+const URL = "https://dcpijdxzwbseoirhizki.supabase.co";
+const KEY = "sb_publishable_yiGYBc9S63g3Nmrxl2vBcw_z65-GUSF";
+
+function initSupabase() {
+  try {
+    const sb = supabase.createClient(URL, KEY);
+    document.getElementById('r3').innerHTML = '✅ Supabase Client erstellt';
+    document.getElementById('r3').className = 'ok';
+
+    // Test DB connection
+    sb.from('courses').select('name').limit(1)
+      .then(({data, error}) => {
+        if (error) {
+          document.getElementById('r4').innerHTML = '❌ DB Fehler: ' + error.message;
+          document.getElementById('r4').className = 'err';
+        } else {
+          document.getElementById('r4').innerHTML = '✅ Datenbank erreichbar (' + (data?.length||0) + ' Plätze)';
+          document.getElementById('r4').className = 'ok';
+        }
+      }).catch(e => {
+        document.getElementById('r4').innerHTML = '❌ DB Exception: ' + e.message;
+        document.getElementById('r4').className = 'err';
+      });
+
+    // Test auth
+    sb.auth.getSession()
+      .then(({data, error}) => {
+        if (error) {
+          document.getElementById('r5').innerHTML = '❌ Auth Fehler: ' + error.message;
+          document.getElementById('r5').className = 'err';
+        } else {
+          const u = data?.session?.user;
+          document.getElementById('r5').innerHTML = u
+            ? '✅ Eingeloggt als: ' + (u.email||u.id)
+            : '✅ Auth OK — kein aktiver Login';
+          document.getElementById('r5').className = 'ok';
+          document.getElementById('result').innerHTML = u
+            ? '🎉 Alles OK — du bist eingeloggt!'
+            : '🎉 Verbindung funktioniert — bitte einloggen';
+          document.getElementById('result').style.color = '#4ade80';
+        }
+      }).catch(e => {
+        document.getElementById('r5').innerHTML = '❌ Auth Exception: ' + e.message;
+        document.getElementById('r5').className = 'err';
+        document.getElementById('result').innerHTML = '⚠️ Problem mit Auth: ' + e.message;
+        document.getElementById('result').style.color = '#f87171';
+      });
+
+  } catch(e) {
+    document.getElementById('r3').innerHTML = '❌ Client Fehler: ' + e.message;
+    document.getElementById('r3').className = 'err';
+  }
+}
+</script>
+</body>
+</html>
