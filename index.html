@@ -377,7 +377,10 @@ function renderHome() {
     const p0 = last.players?.[0]; const t = last.totals?.[p0?.id]||{};
     $('home-last-round').innerHTML = `
       <div class="card" style="margin-bottom:12px;">
-        <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:8px;">LETZTE RUNDE</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;">LETZTE RUNDE</div>
+          <button class="btn btn-red btn-sm" style="padding:4px 10px;font-size:11px;" onclick="deleteRound('${last.id}')">🗑 Löschen</button>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-size:15px;font-weight:600;">${last.course_name||'—'}</div>
@@ -838,8 +841,19 @@ function renderStatSection(id) {
         ].map(([l,v,c,z])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">${z}</div></div></div>`).join('')}
       </div>
       <div class="card" style="margin-top:10px;">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Runden Verlauf</div>
-        ${rows.map(r=>`<div class="row"><span>${r.date}</span><span style="color:#4ade80;font-weight:600;">${r.Netto} Pkt.</span><span class="muted" style="font-size:11px;">HCP ${r.HCP.toFixed(1)}</span></div>`).join('')}
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Alle Runden</div>
+        ${norm.map(r=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return`
+          <div class="row" style="align-items:center;">
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${r.courseName}</div>
+              <div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · ${r.numHoles}L · ${teeChip(r.teeType)}</div>
+            </div>
+            <div style="text-align:right;margin-right:10px;">
+              <div style="font-size:17px;font-weight:700;color:#4ade80;">${t.nettoStableford||0} Pkt.</div>
+              <div class="muted" style="font-size:10px;">Brutto: ${t.bruttoScore||0}</div>
+            </div>
+            <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="deleteRound('${r.id}')">🗑</button>
+          </div>`;}).join('')}
       </div>`;
   }
 
@@ -917,6 +931,18 @@ function renderStatSection(id) {
         ${withDiff.map((r,i)=>{const t=r.totals?.[r.players?.[0]?.id]||{};const isBest=allDiffs.indexOf(r.diff)<8;return`<div class="row"><div><div style="font-size:13px;font-weight:600;">${r.courseName}</div><div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · Brutto ${t.bruttoScore}</div></div><div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:${isBest?'#4ade80':'#6b9e7a'};">${r.diff>0?'+'+r.diff:r.diff}</div>${isBest?'<div style="font-size:9px;color:#4ade80;">★ top 8</div>':''}</div></div>`;}).join('')}
       </div>`;
   }
+}
+
+// ── DELETE ROUND ──
+async function deleteRound(id) {
+  if (!confirm('Diese Runde wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
+  const {error} = await sb.from('rounds').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) { alert('Fehler beim Löschen: ' + error.message); return; }
+  rounds = rounds.filter(r => r.id !== id);
+  // Refresh current view
+  const activePage = document.querySelector('.page.active')?.id;
+  if (activePage === 'pg-home') renderHome();
+  else if (activePage === 'pg-stats') renderStats();
 }
 
 // ── ADMIN ──
