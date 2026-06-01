@@ -11,8 +11,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;}
     html,body,#root{margin:0;padding:0;height:100%;background:#060e08;}
@@ -58,22 +57,76 @@ try {
   console.error("Supabase init error:", e);
 }
 const {useState,useEffect,useRef} = React;
-// Safe Recharts import
-const RC = typeof Recharts !== 'undefined' ? Recharts : {};
-const LineChart = RC.LineChart || (()=>null);
-const Line = RC.Line || (()=>null);
-const BarChart = RC.BarChart || (()=>null);
-const Bar = RC.Bar || (()=>null);
-const XAxis = RC.XAxis || (()=>null);
-const YAxis = RC.YAxis || (()=>null);
-const CartesianGrid = RC.CartesianGrid || (()=>null);
-const Tooltip = RC.Tooltip || (()=>null);
-const ResponsiveContainer = RC.ResponsiveContainer || (({children})=>React.createElement('div',{style:{width:'100%',height:200}},children));
-const Legend = RC.Legend || (()=>null);
-const RadarChart = RC.RadarChart || (()=>null);
-const Radar = RC.Radar || (()=>null);
-const PolarGrid = RC.PolarGrid || (()=>null);
-const PolarAngleAxis = RC.PolarAngleAxis || (()=>null);
+// ── Custom lightweight charts (no external dependency) ──
+
+function SimpleLineChart({data,lines,height=180}){
+  if(!data||data.length<2)return <div style={{textAlign:"center",padding:40,color:T.muted,fontSize:12}}>Noch zu wenig Daten für Grafik (min. 2 Runden)</div>;
+  const W=320,H=height,PL=32,PR=8,PT=8,PB=24;
+  const allVals=lines.flatMap(l=>data.map(d=>d[l.key]||0));
+  const minV=Math.min(...allVals),maxV=Math.max(...allVals);
+  const range=maxV-minV||1;
+  const x=i=>PL+(i/(data.length-1))*(W-PL-PR);
+  const y=(v,mn,mx)=>PT+(1-(v-mn)/(mx-mn||1))*(H-PT-PB);
+  return <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{overflow:"visible"}}>
+    {/* Grid lines */}
+    {[0,.5,1].map(t=><line key={t} x1={PL} x2={W-PR} y1={PT+t*(H-PT-PB)} y2={PT+t*(H-PT-PB)} stroke={T.faint} strokeWidth="1"/>)}
+    {/* X labels */}
+    {data.map((d,i)=><text key={i} x={x(i)} y={H} textAnchor="middle" fill={T.muted} fontSize="9">{d.date||`R${i+1}`}</text>)}
+    {/* Lines */}
+    {lines.map(l=>{
+      const vals=data.map(d=>d[l.key]||0);
+      const mn=Math.min(...vals),mx=Math.max(...vals);
+      const pts=data.map((d,i)=>`${x(i)},${y(d[l.key]||0,mn,mx)}`).join(" ");
+      return <g key={l.key}>
+        <polyline points={pts} fill="none" stroke={l.color||T.accent} strokeWidth="2" strokeLinejoin="round"/>
+        {data.map((d,i)=><circle key={i} cx={x(i)} cy={y(d[l.key]||0,mn,mx)} r="3" fill={l.color||T.accent}/>)}
+      </g>;
+    })}
+    {/* Legend */}
+    {lines.map((l,i)=><g key={l.key} transform={`translate(${PL+i*100},${H-6})`}>
+      <line x1="0" x2="12" y1="-4" y2="-4" stroke={l.color||T.accent} strokeWidth="2"/>
+      <text x="15" y="0" fill={T.muted} fontSize="9">{l.label}</text>
+    </g>)}
+  </svg>;
+}
+
+function SimpleBarChart({data,barKey,height=140,color}){
+  if(!data||!data.length)return null;
+  const W=320,H=height,PL=28,PR=8,PT=8,PB=24;
+  const vals=data.map(d=>d[barKey]||0);
+  const maxV=Math.max(...vals,1);
+  const bw=Math.max(8,Math.min(28,(W-PL-PR)/data.length-4));
+  return <svg width="100%" viewBox={`0 0 ${W} ${H}`}>
+    {[0,.5,1].map(t=><line key={t} x1={PL} x2={W-PR} y1={PT+t*(H-PT-PB)} y2={PT+t*(H-PT-PB)} stroke={T.faint} strokeWidth="1"/>)}
+    {data.map((d,i)=>{
+      const bh=(d[barKey]||0)/maxV*(H-PT-PB);
+      const bx=PL+(i+.5)*(W-PL-PR)/data.length-bw/2;
+      return <g key={i}>
+        <rect x={bx} y={H-PB-bh} width={bw} height={bh} fill={color||T.blue} rx="3"/>
+        <text x={bx+bw/2} y={H} textAnchor="middle" fill={T.muted} fontSize="9">{d.date||d.name}</text>
+      </g>;
+    })}
+  </svg>;
+}
+
+function SimpleRadar({data,height=220}){
+  if(!data||!data.length)return null;
+  const W=280,H=height,CX=W/2,CY=H/2,R=80;
+  const n=data.length;
+  const angle=i=>((i/n)*2*Math.PI)-Math.PI/2;
+  const pt=(i,r)=>{const a=angle(i);return[CX+r*Math.cos(a),CY+r*Math.sin(a)];};
+  const grid=[.25,.5,.75,1];
+  return <svg width="100%" viewBox={`0 0 ${W} ${H}`}>
+    {/* Grid */}
+    {grid.map(g=><polygon key={g} points={data.map((_,i)=>pt(i,R*g).join(",")).join(" ")} fill="none" stroke={T.faint} strokeWidth="1"/>)}
+    {/* Axes */}
+    {data.map((_,i)=>{const[x,y]=pt(i,R);return<line key={i} x1={CX} y1={CY} x2={x} y2={y} stroke={T.faint} strokeWidth="1"/>;} )}
+    {/* Data */}
+    <polygon points={data.map((d,i)=>pt(i,R*(d.A||0)/100).join(",")).join(" ")} fill={T.accent} fillOpacity=".25" stroke={T.accent} strokeWidth="2"/>
+    {/* Labels */}
+    {data.map((d,i)=>{const[x,y]=pt(i,R+18);return<text key={i} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill={T.muted} fontSize="10">{d.subject}</text>;})}
+  </svg>;
+}
 
 // ── Theme ──
 const T={bg:"#060e08",card:"#0b1e10",border:"#173320",accent:"#4ade80",
@@ -729,19 +782,41 @@ function RoundSummary({round,setTab,onNew}){
 // ── STATS ──
 function StatsView({rounds}){
   const[sub,setSub]=useState("hcp");
-  const allSc=rounds.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
 
-  if(!rounds.length)return(<div style={{padding:"24px 16px"}}><Hdr title="Analyse" sub="Noch keine Daten"/><div style={{textAlign:"center",padding:60,color:T.muted}}><div style={{fontSize:48}}>📊</div><div style={{marginTop:12}}>Spiele mindestens eine Runde.</div></div></div>);
+  // Normalize rounds from Supabase (snake_case) to app format
+  const norm=rounds.map(r=>({
+    ...r,
+    courseName: r.course_name||r.courseName||"",
+    teeType: r.tee_type||r.teeType||"yellow",
+    numHoles: r.num_holes||r.numHoles||18,
+    players: r.players||[],
+    scores: r.scores||{},
+    totals: r.totals||{},
+    date: r.date||r.created_at,
+  }));
 
+  const allSc=norm.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
+
+  if(!norm.length)return(<div style={{padding:"24px 16px"}}><Hdr title="Analyse" sub="Noch keine Daten"/><div style={{textAlign:"center",padding:60,color:T.muted}}><div style={{fontSize:48}}>📊</div><div style={{marginTop:12}}>Spiele mindestens eine Runde.</div></div></div>);
+  if(!allSc.length)return(<div style={{padding:"24px 16px"}}>
+    <Hdr title="Analyse" sub={`${norm.length} Runden gespeichert`}/>
+    <div className="card" style={{textAlign:"center",padding:30}}>
+      <div style={{fontSize:32,marginBottom:12}}>📊</div>
+      <div style={{color:T.muted,fontSize:13}}>Keine Loch-Daten gefunden.<br/>Bitte trage bei der nächsten Runde Scores pro Loch ein.</div>
+    </div>
+    <RoundsListFallback rounds={norm}/>
+  </div>);
+
+  const rounds=norm; // use normalized
   const byPar=p=>allSc.filter(h=>h.par===p);
   const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
   const fwPct=()=>{const a=allSc.filter(h=>h.par!==3&&h.fairway!==null);return a.length?Math.round(a.filter(h=>h.fairway).length/a.length*100):0;};
   const girPct=()=>{const a=allSc.filter(h=>h.gir!==null);return a.length?Math.round(a.filter(h=>h.gir).length/a.length*100):0;};
   const avgPutts=allSc.filter(h=>h.putts!=null).reduce((s,h)=>s+h.putts,0)/(allSc.filter(h=>h.putts!=null).length||1);
 
-  const hcpData=rounds.map((r,i)=>{
-    const p=r.players?.[0];const t=r.totals?.[p?.id];
-    return{name:`R${i+1}`,date:new Date(r.date||r.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}),"HCP":p?.hcpIndex,"Netto":t?.nettoStableford||0};
+  const hcpData=norm.map((r,i)=>{
+    const p=r.players?.[0];const t=r.totals?.[p?.id]||{};
+    return{name:`R${i+1}`,date:new Date(r.date||r.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}),"HCP":parseFloat(p?.hcpIndex||p?.hcp_index||0),"Netto":t?.nettoStableford||0,"Putts":t?.putts||0};
   });
 
   const radarData=[
@@ -768,18 +843,7 @@ function StatsView({rounds}){
     {sub==="hcp"&&<div style={{display:"grid",gap:14}}>
       <div className="card">
         <div style={{fontSize:12,color:T.accent,fontWeight:600,marginBottom:12}}>HCP & Netto Stableford</div>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={hcpData} margin={{top:4,right:8,bottom:4,left:-20}}>
-            <CartesianGrid strokeDasharray="3 3" stroke={T.faint}/>
-            <XAxis dataKey="date" tick={{fill:T.muted,fontSize:10}}/>
-            <YAxis yAxisId="l" tick={{fill:T.muted,fontSize:10}}/>
-            <YAxis yAxisId="r" orientation="right" tick={{fill:T.muted,fontSize:10}}/>
-            <Tooltip contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8}}/>
-            <Line yAxisId="l" dataKey="HCP" stroke={T.yellow} strokeWidth={2} dot={{fill:T.yellow,r:3}}/>
-            <Line yAxisId="r" dataKey="Netto" stroke={T.accent} strokeWidth={2} dot={{fill:T.accent,r:3}}/>
-            <Legend wrapperStyle={{fontSize:11,color:T.muted}}/>
-          </LineChart>
-        </ResponsiveContainer>
+        <SimpleLineChart data={hcpData} lines={[{key:"HCP",label:"HCP Index",color:T.yellow},{key:"Netto",label:"Netto Stableford",color:T.accent}]} height={180}/>
       </div>
       <div className="card">
         <div style={{fontSize:12,color:T.accent,fontWeight:600,marginBottom:10}}>Key Stats</div>
@@ -797,13 +861,10 @@ function StatsView({rounds}){
     </div>}
 
     {sub==="radar"&&<div className="card">
-      <div style={{fontSize:12,color:T.accent,fontWeight:600,marginBottom:4}}>Performance-Radar</div>
-      <ResponsiveContainer width="100%" height={260}>
-        <RadarChart data={radarData}>
-          <PolarGrid stroke={T.faint}/><PolarAngleAxis dataKey="subject" tick={{fill:T.muted,fontSize:11}}/>
-          <Radar dataKey="A" stroke={T.accent} fill={T.accent} fillOpacity={0.25}/>
-        </RadarChart>
-      </ResponsiveContainer>
+      <div style={{fontSize:12,color:T.accent,fontWeight:600,marginBottom:8}}>Performance-Radar</div>
+      <div style={{display:"flex",justifyContent:"center"}}>
+        <SimpleRadar data={radarData} height={220}/>
+      </div>
     </div>}
 
     {sub==="tips"&&<div style={{display:"grid",gap:10}}>
@@ -953,6 +1014,31 @@ function AdminView(){
       {allRounds.length>30&&<div style={{textAlign:"center",fontSize:12,color:T.muted,padding:8}}>... und {allRounds.length-30} weitere Runden</div>}
     </div>}
   </div>);
+}
+
+
+// Fallback: show round totals when no hole data
+function RoundsListFallback({rounds}){
+  return <div style={{marginTop:16}}>
+    <div style={{fontSize:12,color:T.accent,fontWeight:600,marginBottom:10}}>Gespeicherte Runden</div>
+    {rounds.map((r,i)=>{
+      const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
+      return <div key={r.id||i} className="card" style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:600}}>{r.courseName}</div>
+            <div style={{fontSize:11,color:T.muted}}>{new Date(r.date).toLocaleDateString("de-DE")} · {r.numHoles}L</div>
+            <div style={{fontSize:11,color:T.muted}}>👤 {p?.name||"?"} · HCP {p?.hcpIndex||"?"}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"Georgia,serif",fontSize:28,color:T.accent,fontWeight:700,lineHeight:1}}>{t.nettoStableford||"—"}</div>
+            <div style={{fontSize:10,color:T.muted}}>Netto Stableford</div>
+            <div style={{fontSize:10,color:T.muted}}>Brutto: {t.bruttoScore||"—"}</div>
+          </div>
+        </div>
+      </div>;
+    })}
+  </div>;
 }
 
 // ── RENDER ──
