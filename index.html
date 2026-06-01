@@ -46,7 +46,7 @@
 // KONFIGURATION
 // ═══════════════════════════════════════
 const SUPABASE_URL = "https://dcpijdxzwbseoirhizki.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjcGlqZHh6d2JzZW9pcmhpemtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTMxNzksImV4cCI6MjA5NTg2OTE3OX0.8XYSmuUfXR-A4-dTEwL4FJFIVp2Ct4buXDIJx_Zs0o8";
+const SUPABASE_KEY = "sb_publishable_yiGYBc9S63g3Nmrxl2vBcw_z65-GUSF";
 // ═══════════════════════════════════════
 
 // ── Globals ──
@@ -257,20 +257,22 @@ function App() {
   const [rounds, setRounds] = useState([]);
   const [savedPlayers, setSavedPlayers] = useState([]);
   const [activeRound, setActiveRound] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(()=>{
-    if (!sb) { setLoading(false); return; }
-    const to = setTimeout(()=>setLoading(false), 6000);
+    if (!sb) return;
+    // Don't wait - show login immediately, restore session in background
+    setLoading(false);
+    // Check if already logged in (silent, no spinner)
     sb.auth.getSession().then(({data:{session}})=>{
-      clearTimeout(to);
-      if (session?.user) initUser(session.user); else setLoading(false);
-    }).catch(()=>{ clearTimeout(to); setLoading(false); });
+      if (session?.user) initUser(session.user);
+    }).catch(()=>{});
+    // Listen for future auth changes
     const {data:{subscription}} = sb.auth.onAuthStateChange((_,session)=>{
       if (session?.user) initUser(session.user);
-      else { setUser(null); setProfile(null); setLoading(false); }
+      else { setUser(null); setProfile(null); }
     });
-    return ()=>{ subscription.unsubscribe(); clearTimeout(to); };
+    return ()=>subscription.unsubscribe();
   },[]);
 
   const initUser = async (u) => {
@@ -298,10 +300,7 @@ function App() {
     setRounds(fresh);
   };
 
-  if (loading) return e("div",{style:{height:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}},
-    e("span",{style:{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}},"⛳"),
-    e("span",{style:{fontSize:13,color:T.muted}},"Verbinde…")
-  );
+  // No spinner - show login or app immediately
   if (!user || !sb) return e(AuthScreen, {onLogin: u=>initUser(u)});
 
   const navItems = [
@@ -354,7 +353,7 @@ function HomeView({rounds,profile,setTab,activeRound,userId,updProfile}) {
               btn({background:T.accent,color:"#000",padding:"4px 10px",fontSize:12,borderRadius:8},async()=>{await updProfile({hcp_index:hcpD});setEditHcp(false);},"✓")
             )
           : e("div",{onClick:()=>setEditHcp(true),style:{cursor:"pointer",background:T.accentGlow,border:`1px solid ${T.accent}`,borderRadius:10,padding:"4px 14px",display:"inline-block"}},
-              e("span",{style:{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:T.accent}},profile?.hcp_index??18)
+              e("span",{style:{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:T.accent}},parseFloat(profile?.hcp_index??18).toFixed(1))
             )
       )
     ),
@@ -653,7 +652,7 @@ function RoundSetup({courses,onStart,setTab,savedPlayers,setSavedPlayers,userId}
                     onChange:async ev=>{const v=parseFloat(ev.target.value)||0;await DB.updatePlayer(p.id,v);setSavedPlayers(savedPlayers.map(x=>x.id===p.id?{...x,hcpIndex:v}:x));},
                     onClick:ev=>ev.stopPropagation()})
                 )
-              : e("div",{style:{fontSize:11,color:T.muted}},"HCP "+p.hcpIndex+(teeData?` · Platz-HCP ${calcCHcp(p.hcpIndex,teeData.sr,teeData.cr,teeData.par)}`:""))
+              : e("div",{style:{fontSize:11,color:T.muted}},"HCP "+parseFloat(p.hcpIndex||0).toFixed(1)+(teeData?` · Platz-HCP ${calcCHcp(p.hcpIndex,teeData.sr,teeData.cr,teeData.par)}`:""))
           ),
           editMode && btn({background:"transparent",color:T.red,padding:"4px 8px",fontSize:18,border:`1px solid rgba(248,113,113,.3)`,borderRadius:8},
             async ev=>{ev.stopPropagation();await DB.deletePlayer(p.id);setSavedPlayers(savedPlayers.filter(x=>x.id!==p.id));setSelectedIds(selectedIds.filter(x=>x!==p.id));},"🗑")
@@ -804,7 +803,7 @@ function RoundSummary({round,setTab,onNew}) {
         e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
           e("div",{},
             e("div",{style:{fontSize:16,fontWeight:600}},"👤 "+p.name),
-            e("div",{style:{fontSize:11,color:T.muted}},"HCP "+p.hcpIndex+" · Platz-HCP "+p.courseHcp)
+            e("div",{style:{fontSize:11,color:T.muted}},"HCP "+parseFloat(p.hcpIndex||0).toFixed(1)+" · Platz-HCP "+p.courseHcp)
           ),
           e("div",{style:{textAlign:"right"}},
             e("div",{style:{fontSize:10,color:T.muted}},"Netto Stableford"),
@@ -882,7 +881,7 @@ function StatsView({rounds}) {
   return e("div",{className:"fade",style:{padding:"24px 16px"}},
     e(Hdr,{title:"Analyse",sub:norm.length+" Runden"}),
     e("div",{style:{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4}},
-      [["hcp","📈 Verlauf"],["radar","🎯 Radar"],["tips","💡 Tipps"]].map(([k,l])=>
+      [["hcp","📈 Verlauf"],["radar","🎯 Radar"],["tips","💡 Tipps"],["sim","🧮 HCP-Sim"]].map(([k,l])=>
         e("button",{key:k,className:"tg"+(sub===k?" on":""),onClick:()=>setSub(k),style:{whiteSpace:"nowrap"}},l)
       )
     ),
@@ -907,6 +906,7 @@ function StatsView({rounds}) {
       e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:8}},"Performance-Radar"),
       e("div",{style:{display:"flex",justifyContent:"center"}},e(SimpleRadar,{data:radarData,height:220}))
     ),
+    sub==="sim" && e(HcpSimulator,{rounds:norm}),
     sub==="tips" && e("div",{style:{display:"grid",gap:10}},
       tips.length===0 && e("div",{className:"card",style:{color:T.accent,textAlign:"center",padding:30}},"🏆 Alles im grünen Bereich!"),
       tips.map((t,i)=>e("div",{key:i,className:"card",style:{borderColor:T.yellow+"44"}},e("div",{style:{fontSize:13,color:T.text,lineHeight:1.6}},t))),
@@ -915,6 +915,108 @@ function StatsView({rounds}) {
         ["Mindestens 1× pro Woche 30 Min. Putting","Driving Range: 60% Eisen, 40% Holz","Vor Runden 15 Min. warm spielen","HCP-relevante Runden immer einreichen"].map((t,i)=>
           e("div",{key:i,style:{fontSize:12,color:T.muted,padding:"5px 0",borderBottom:`1px solid ${T.faint}`,display:"flex",gap:8}},e("span",{style:{color:T.accent}},"✓"),t)
         )
+      )
+    )
+  );
+}
+
+
+// ══════════════════════════════════════════
+// HCP SIMULATOR
+// ══════════════════════════════════════════
+function HcpSimulator({rounds}) {
+  // WHS: Score Differential = (Gross - CR) * 113 / SR
+  // HCP Index = avg of best 8 from last 20 differentials * 0.96
+  const calcDiff = r => {
+    const p = r.players?.[0];
+    const t = r.totals?.[p?.id]||{};
+    const gross = t.bruttoScore;
+    if (!gross || !r.cr || !r.sr) return null;
+    return parseFloat(((gross - r.cr) * 113 / r.sr).toFixed(1));
+  };
+
+  const [selected, setSelected] = useState(rounds.map(r=>r.id));
+
+  const toggle = id => setSelected(sel=>sel.includes(id)?sel.filter(x=>x!==id):[...sel,id]);
+  const selectAll = () => setSelected(rounds.map(r=>r.id));
+  const clearAll = () => setSelected([]);
+
+  // Compute current HCP from all rounds
+  const allDiffs = rounds.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
+  const selDiffs = allDiffs.filter(r=>selected.includes(r.id)).map(r=>r.diff).sort((a,b)=>a-b);
+  const best8 = selDiffs.slice(0,Math.min(8,selDiffs.length));
+  const simHcp = best8.length ? parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length*0.96).toFixed(1)) : null;
+
+  // Current HCP from last rounds
+  const curDiffs = allDiffs.slice(0,20).map(r=>r.diff).sort((a,b)=>a-b);
+  const curBest8 = curDiffs.slice(0,Math.min(8,curDiffs.length));
+  const curHcp = curBest8.length ? parseFloat((curBest8.reduce((a,b)=>a+b,0)/curBest8.length*0.96).toFixed(1)) : null;
+
+  const delta = (simHcp!==null && curHcp!==null) ? parseFloat((simHcp-curHcp).toFixed(1)) : null;
+
+  if (!rounds.length) return e("div",{className:"card",style:{textAlign:"center",padding:30,color:T.muted}},"Noch keine Runden vorhanden.");
+
+  return e("div",{style:{display:"grid",gap:14}},
+    // Result card
+    e("div",{className:"card",style:{background:`linear-gradient(135deg,${T.accentDim}22,${T.card})`}},
+      e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:12}},"🧮 HCP Simulation (WHS-Formel)"),
+      e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",textAlign:"center",gap:12}},
+        e("div",{},
+          e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:T.muted}},curHcp!==null?curHcp.toFixed(1):"—"),
+          e("div",{style:{fontSize:11,color:T.muted,marginTop:2}},"Aktuell")
+        ),
+        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center"}},
+          e("div",{style:{fontSize:28,color:T.faint}},"→")
+        ),
+        e("div",{},
+          e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:simHcp!==null?(delta<0?T.accent:delta>0?T.red:T.text):T.muted}},simHcp!==null?simHcp.toFixed(1):"—"),
+          e("div",{style:{fontSize:11,color:T.muted,marginTop:2}},"Simuliert")
+        )
+      ),
+      delta!==null && e("div",{style:{textAlign:"center",marginTop:12,fontSize:13,color:delta<0?T.accent:delta>0?T.red:T.muted,fontWeight:600}},
+        delta<0 ? `▼ ${Math.abs(delta)} Verbesserung` : delta>0 ? `▲ ${delta} Verschlechterung` : "Keine Änderung"
+      ),
+      e("div",{style:{fontSize:11,color:T.muted,textAlign:"center",marginTop:8}},
+        `Beste ${best8.length} von ${selDiffs.length} ausgewählten Runden · × 0.96`
+      )
+    ),
+    // Controls
+    e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
+      e("button",{className:"tg",onClick:selectAll},"Alle auswählen"),
+      e("button",{className:"tg",onClick:clearAll},"Alle abwählen")
+    ),
+    // Round list
+    e("div",{style:{display:"grid",gap:8}},
+      allDiffs.length===0 && e("div",{className:"card",style:{color:T.muted,textAlign:"center",padding:20,fontSize:13}},
+        "Keine auswertbaren Runden (Brutto-Score, CR und SR werden benötigt)."
+      ),
+      allDiffs.map(r=>{
+        const sel = selected.includes(r.id);
+        const p = r.players?.[0]; const t = r.totals?.[p?.id]||{};
+        const isBest = sel && selDiffs.indexOf(r.diff) < 8;
+        return e("div",{key:r.id,onClick:()=>toggle(r.id),
+          style:{background:sel?T.accentGlow:T.card,border:`1px solid ${sel?T.accent:T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all .18s"}},
+          e("div",{style:{width:28,height:28,borderRadius:"50%",background:sel?T.accent:T.faint,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}},sel?"✓":"○"),
+          e("div",{style:{flex:1}},
+            e("div",{style:{fontSize:13,fontWeight:600,color:sel?T.accent:T.text}},r.courseName||r.course_name),
+            e("div",{style:{fontSize:11,color:T.muted}},new Date(r.date).toLocaleDateString("de-DE")+" · Brutto "+t.bruttoScore),
+            e("div",{style:{fontSize:11,color:T.muted}},"CR "+r.cr+" / SR "+r.sr)
+          ),
+          e("div",{style:{textAlign:"right",flexShrink:0}},
+            e("div",{style:{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:isBest?T.accent:sel?T.muted:T.faint}},r.diff>0?"+"+r.diff:r.diff),
+            e("div",{style:{fontSize:9,color:T.muted}},"Diff."),
+            isBest && e("div",{style:{fontSize:9,color:T.accent,marginTop:2}},"★ top 8")
+          )
+        );
+      })
+    ),
+    e("div",{className:"card",style:{borderColor:T.faint}},
+      e("div",{style:{fontSize:11,color:T.muted,lineHeight:1.6}},
+        "ℹ️ WHS-Formel: Score Differential = (Brutto − CR) × 113 ÷ SR
+",
+        "HCP Index = Ø der besten 8 Differentials × 0.96
+",
+        "Nur Runden mit eingetragenen Brutto-Scores werden berücksichtigt."
       )
     )
   );
