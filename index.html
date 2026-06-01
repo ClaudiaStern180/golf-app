@@ -4,1166 +4,913 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="theme-color" content="#060e08"/>
   <title>GolfTracker</title>
   <link rel="manifest" href="manifest.json"/>
-  <!-- Load React, ReactDOM, Supabase FIRST as regular scripts -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <style>
-    *,*::before,*::after{box-sizing:border-box;}
-    html,body,#root{margin:0;padding:0;min-height:100%;background:#060e08;}
-    body{font-family:system-ui,-apple-system,sans-serif;color:#ecfdf5;}
-    ::-webkit-scrollbar{width:3px;}
-    ::-webkit-scrollbar-thumb{background:#166534;border-radius:2px;}
-    input,select{background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;box-sizing:border-box;font-family:inherit;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:system-ui,sans-serif;background:#060e08;color:#ecfdf5;min-height:100vh;}
+    .page{display:none;padding:20px 16px 80px;max-width:480px;margin:0 auto;}
+    .page.active{display:block;}
+    .card{background:#0b1e10;border:1px solid #173320;border-radius:14px;padding:16px;margin-bottom:12px;}
+    input,select{background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;margin-top:4px;}
     input:focus,select:focus{border-color:#4ade80;}
     input[type=number]{-moz-appearance:textfield;}
-    input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
-    button{border:none;cursor:pointer;font-weight:500;border-radius:10px;transition:all .18s;font-family:inherit;}
-    button:active{transform:scale(.96);}
-    .card{background:#0b1e10;border:1px solid #173320;border-radius:16px;padding:18px;}
-    .tg{cursor:pointer;border-radius:8px;padding:6px 12px;font-size:13px;font-weight:500;border:1px solid #2d4d38;background:transparent;color:#6b9e7a;transition:all .18s;font-family:inherit;}
-    .tg.on{background:#22c55e22;border-color:#4ade80;color:#4ade80;}
-    .tg.no{background:rgba(248,113,113,.1);border-color:#f87171;color:#f87171;}
-    @keyframes fi{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
-    .fade{animation:fi .3s ease both;}
-    @keyframes spin{to{transform:rotate(360deg);}}
+    .btn{display:block;width:100%;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;font-family:inherit;}
+    .btn-green{background:#4ade80;color:#000;}
+    .btn-dark{background:#2d4d38;color:#ecfdf5;}
+    .btn-red{background:rgba(248,113,113,.15);color:#f87171;border:1px solid rgba(248,113,113,.3);}
+    .btn-sm{padding:8px 14px;font-size:13px;width:auto;display:inline-block;}
+    .label{font-size:12px;color:#6b9e7a;display:block;margin-bottom:2px;margin-top:10px;}
+    .err{background:rgba(248,113,113,.1);border:1px solid #f87171;border-radius:8px;padding:10px;margin-top:10px;font-size:13px;color:#f87171;}
+    .ok{background:rgba(74,222,128,.1);border:1px solid #4ade80;border-radius:8px;padding:10px;margin-top:10px;font-size:13px;color:#4ade80;}
+    h1{font-size:26px;font-weight:700;margin-bottom:4px;}
+    h2{font-size:18px;font-weight:700;margin-bottom:16px;}
+    h3{font-size:15px;font-weight:600;margin-bottom:4px;}
+    .muted{color:#6b9e7a;font-size:13px;}
+    .accent{color:#4ade80;}
+    .big-num{font-size:32px;font-weight:700;color:#4ade80;line-height:1;}
+    nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#040b06;border-top:1px solid #173320;display:flex;z-index:100;}
+    nav button{flex:1;padding:10px 4px 8px;background:transparent;border:none;color:#6b9e7a;font-size:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;}
+    nav button.active{color:#4ade80;}
+    nav button span{font-size:20px;}
+    .tee-chip{border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;display:inline-block;}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2d4d38;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+    .stat-box{text-align:center;background:#0b1e10;border:1px solid #173320;border-radius:12px;padding:14px 8px;}
+    .tog{border-radius:8px;padding:6px 12px;font-size:13px;border:1px solid #2d4d38;background:transparent;color:#6b9e7a;cursor:pointer;font-family:inherit;}
+    .tog.on{background:#22c55e22;border-color:#4ade80;color:#4ade80;}
+    .tog.no{background:rgba(248,113,113,.1);border-color:#f87171;color:#f87171;}
+    .hole-btn{min-width:34px;height:34px;border-radius:7px;border:1px solid #173320;background:#0b1e10;color:#6b9e7a;font-size:11px;font-weight:600;cursor:pointer;}
+    .hole-btn.active{background:#4ade80;color:#000;border-color:#4ade80;}
+    .hole-btn.done{background:#2d4d38;color:#ecfdf5;}
+    @keyframes spin{to{transform:rotate(360deg)}}
     .spin{display:inline-block;animation:spin 1s linear infinite;}
+    .player-card{background:#0b1e10;border:1px solid #173320;border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;}
+    .player-card.sel{background:#22c55e22;border-color:#4ade80;}
+    .avatar{width:28px;height:28px;border-radius:50%;background:#2d4d38;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+    .avatar.sel{background:#4ade80;color:#000;}
+    svg text{font-family:system-ui,sans-serif;}
   </style>
 </head>
 <body>
-<div id="root"></div>
+
+<!-- AUTH PAGE -->
+<div id="pg-auth" class="page active" style="max-width:480px;margin:0 auto;padding:20px;">
+  <div style="text-align:center;margin:40px 0 28px;">
+    <div style="font-size:52px">⛳</div>
+    <h1 style="margin-top:8px;">Golf<span class="accent">Tracker</span></h1>
+    <p class="muted" style="margin-top:4px;">Dein persönlicher Golf-Assistent</p>
+  </div>
+  <div class="card" style="padding:24px;">
+    <div style="display:flex;gap:8px;margin-bottom:20px;">
+      <button class="btn btn-green btn-sm" id="tab-login" onclick="authTab('login')" style="flex:1">Einloggen</button>
+      <button class="btn btn-dark btn-sm" id="tab-reg" onclick="authTab('reg')" style="flex:1">Registrieren</button>
+    </div>
+    <div id="reg-fields">
+      <label class="label">Name</label>
+      <input id="auth-name" placeholder="Vorname Nachname"/>
+    </div>
+    <label class="label">E-Mail</label>
+    <input id="auth-email" type="email" placeholder="deine@email.de"/>
+    <label class="label">PIN (min. 4 Zeichen)</label>
+    <input id="auth-pin" type="password" placeholder="••••••"/>
+    <div id="auth-err"></div>
+    <button class="btn btn-green" onclick="authSubmit()" style="margin-top:16px;" id="auth-btn">Einloggen →</button>
+  </div>
+</div>
+
+<!-- HOME PAGE -->
+<div id="pg-home" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+    <div>
+      <h1>Golf<span class="accent">Tracker</span></h1>
+      <p class="muted" id="home-greeting">Willkommen</p>
+    </div>
+    <div style="text-align:right;">
+      <div class="muted" style="font-size:10px;margin-bottom:2px;">HCP Index</div>
+      <div id="home-hcp" class="big-num" style="cursor:pointer;background:#22c55e22;border:1px solid #4ade80;border-radius:10px;padding:4px 14px;" onclick="editHcp()">18.0</div>
+    </div>
+  </div>
+  <div id="home-active-round"></div>
+  <div class="grid3" style="margin-bottom:12px;">
+    <div class="stat-box"><div class="big-num" id="stat-rounds">0</div><div class="muted" style="font-size:10px;margin-top:2px;">Runden</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-avg">—</div><div class="muted" style="font-size:10px;margin-top:2px;">⌀ Netto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-best">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste</div></div>
+  </div>
+  <div id="home-last-round"></div>
+  <button class="btn btn-green" onclick="showPage('pg-round')">⛳ Neue Runde starten</button>
+</div>
+
+<!-- COURSES PAGE -->
+<div id="pg-courses" class="page">
+  <h2>Plätze</h2>
+  <div id="courses-list"></div>
+  <div style="font-size:11px;color:#6b9e7a;text-align:center;margin:10px 0;padding:8px;background:#2d4d38;border-radius:8px;">🌐 Alle Plätze sind für alle Spieler sichtbar</div>
+  <button class="btn btn-dark" onclick="showAddCourse()">✍️ Platz hinzufügen</button>
+  <div id="add-course-form" style="display:none;margin-top:12px;" class="card">
+    <h3>Neuer Platz</h3>
+    <label class="label">Platzname</label><input id="nc-name" placeholder="z.B. Golfclub München"/>
+    <label class="label">Ort</label><input id="nc-loc" placeholder="Bayern, Deutschland"/>
+    <label class="label">Löcher</label>
+    <select id="nc-holes"><option value="18">18 Löcher</option><option value="9">9 Löcher</option></select>
+    <div style="margin-top:12px;font-size:12px;color:#4ade80;font-weight:600;">Abschlag-Daten (CR / SR / Par)</div>
+    <div id="nc-tees"></div>
+    <div class="grid2" style="margin-top:10px;">
+      <button class="btn btn-dark" onclick="document.getElementById('add-course-form').style.display='none'">Abbrechen</button>
+      <button class="btn btn-green" onclick="saveCourse()">✓ Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROUND SETUP PAGE -->
+<div id="pg-round" class="page">
+  <h2 id="round-page-title">Neue Runde</h2>
+  <div id="round-active-banner"></div>
+  <div id="round-setup-form">
+    <label class="label">📅 Datum</label>
+    <input id="rs-date" type="date"/>
+    <label class="label">⛳ Golfplatz</label>
+    <select id="rs-course" onchange="updateTeeOptions()"></select>
+    <label class="label">🔢 Löcher</label>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="tog on" id="btn-9" onclick="setHoles(9)">9 Löcher</button>
+      <button class="tog" id="btn-18" onclick="setHoles(18)">18 Löcher</button>
+    </div>
+    <label class="label">🎯 Abschlag</label>
+    <div id="tee-options" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
+    <div id="rs-course-info" class="card" style="margin-top:12px;"></div>
+    <div style="margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="label" style="margin:0;">👥 Spieler <span class="accent" id="sel-count">(0)</span></span>
+        <div style="display:flex;gap:6px;">
+          <button class="tog btn-sm" id="edit-players-btn" onclick="toggleEditPlayers()">✏️</button>
+          <button class="tog btn-sm" style="color:#4ade80;" onclick="toggleAddPlayer()">+ Neu</button>
+        </div>
+      </div>
+      <div id="add-player-form" style="display:none;" class="card" style="border-color:#4ade80;">
+        <div class="grid2">
+          <div><label class="label">Name</label><input id="np-name" placeholder="Vorname"/></div>
+          <div><label class="label">HCP</label><input id="np-hcp" type="number" step="0.1" value="18.0"/></div>
+        </div>
+        <div class="grid2" style="margin-top:8px;">
+          <button class="btn btn-dark btn-sm" onclick="toggleAddPlayer()">Abbrechen</button>
+          <button class="btn btn-green btn-sm" onclick="saveNewPlayer()">💾 Speichern</button>
+        </div>
+      </div>
+      <div id="players-list"></div>
+    </div>
+    <div class="grid2" style="margin-top:16px;">
+      <button class="btn btn-dark" onclick="showPage('pg-home')">← Zurück</button>
+      <button class="btn btn-green" onclick="startRound()">▶ Starten</button>
+    </div>
+  </div>
+  <!-- HOLE ENTRY -->
+  <div id="hole-entry" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <button class="btn btn-dark btn-sm" onclick="saveRound()">💾 Speichern</button>
+      <div style="text-align:center;"><div id="he-course-name" style="font-weight:700;font-size:15px;"></div></div>
+      <button class="btn btn-green btn-sm" onclick="saveRound()">🏁 Fertig</button>
+    </div>
+    <div id="player-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;"></div>
+    <div id="hole-nav" style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;flex-wrap:nowrap;"></div>
+    <div id="hole-card"></div>
+    <div class="grid2" style="margin-top:10px;">
+      <button class="btn btn-dark" id="prev-hole" onclick="changeHole(-1)">← Zurück</button>
+      <button class="btn btn-green" id="next-hole" onclick="changeHole(1)">Weiter →</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATS PAGE -->
+<div id="pg-stats" class="page">
+  <h2>Analyse</h2>
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="tog on" onclick="showStat('verlauf',this)">📈 Verlauf</button>
+    <button class="tog" onclick="showStat('radar',this)">🎯 Radar</button>
+    <button class="tog" onclick="showStat('tips',this)">💡 Tipps</button>
+    <button class="tog" onclick="showStat('sim',this)">🧮 HCP-Sim</button>
+  </div>
+  <div id="stat-verlauf"></div>
+  <div id="stat-radar" style="display:none;"></div>
+  <div id="stat-tips" style="display:none;"></div>
+  <div id="stat-sim" style="display:none;"></div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div id="pg-admin" class="page">
+  <h2>🛡️ Admin</h2>
+  <div id="admin-content"></div>
+</div>
+
+<nav id="main-nav" style="display:none;">
+  <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span>Home</button>
+  <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span>Plätze</button>
+  <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span>Runde</button>
+  <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span>Stats</button>
+  <button onclick="showPage('pg-admin')" id="nav-admin" style="display:none;"><span>🛡️</span>Admin</button>
+  <button onclick="logout()"><span>👤</span>Logout</button>
+</nav>
+
 <script>
-window.onerror = function(msg, src, line, col, err) {
-  document.getElementById('root').innerHTML =
-    '<div style="padding:30px;background:#060e08;min-height:100vh;color:#ecfdf5">' +
-    '<div style="font-size:40px;margin-bottom:16px">⛳</div>' +
-    '<div style="color:#f87171;font-size:14px;margin-bottom:8px">Fehler: '+msg+'</div>' +
-    '<div style="color:#6b9e7a;font-size:12px">Zeile: '+line+'</div>' +
-    '</div>';
-  return false;
-};
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 // KONFIGURATION
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 const SUPABASE_URL = "https://dcpijdxzwbseoirhizki.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjcGlqZHh6d2JzZW9pcmhpemtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTMxNzksImV4cCI6MjA5NTg2OTE3OX0.8XYSmuUfXR-A4-dTEwL4FJFIVp2Ct4buXDIJx_Zs0o8";
-// ═══════════════════════════════════════
+// ═══════════════════════════════════════════
 
-// ── Globals ──
-const e = React.createElement;
-const {useState, useEffect, useRef, useCallback} = React;
-
-// Colors
-const T = {
-  bg:"#060e08", card:"#0b1e10", border:"#173320", accent:"#4ade80",
-  accentDim:"#166534", accentGlow:"#22c55e22", text:"#ecfdf5", muted:"#6b9e7a",
-  faint:"#2d4d38", red:"#f87171", yellow:"#fbbf24", blue:"#60a5fa",
-  orange:"#fb923c", gold:"#fde68a"
-};
 const TEE = {
-  yellow:{label:"Gelb",  short:"Gelb",  bg:"#fbbf24",fg:"#0f172a"},
-  green: {label:"Grün",  short:"Grün",  bg:"#4ade80",fg:"#0f172a"},
-  blue:  {label:"Blau",  short:"Blau",  bg:"#60a5fa",fg:"#fff"},
-  red:   {label:"Rot",   short:"Rot",   bg:"#f87171",fg:"#fff"},
-  orange:{label:"Orange",short:"Orange",bg:"#fb923c",fg:"#fff"},
+  yellow:{label:"Gelb",bg:"#fbbf24",fg:"#0f172a"},
+  green: {label:"Grün",bg:"#4ade80",fg:"#0f172a"},
+  blue:  {label:"Blau",bg:"#60a5fa",fg:"#fff"},
+  red:   {label:"Rot", bg:"#f87171",fg:"#fff"},
+  orange:{label:"Orange",bg:"#fb923c",fg:"#fff"},
 };
 
-// ── Init Supabase ──
-let sb;
+// State
+let sb, currentUser, currentProfile;
+let courses = [], rounds = [], savedPlayers = [];
+let activeRound = null;
+let selectedPlayerIds = [];
+let selectedTee = "yellow";
+let selectedHoles = 9;
+let currentHoleIdx = 0;
+let activePlayerId = null;
+let editPlayersMode = false;
+
+// Init
 try {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} catch(err) {
-  document.getElementById("root").innerHTML =
-    '<div style="padding:40px;color:#f87171;background:#060e08;min-height:100vh">' +
-    '<h2 style="color:#4ade80">⛳ GolfTracker</h2>' +
-    '<p>Supabase Fehler: ' + err.message + '</p></div>';
+  sb.auth.getSession().then(({data:{session}}) => {
+    if (session?.user) loginUser(session.user);
+  }).catch(() => {});
+  sb.auth.onAuthStateChange((_, session) => {
+    if (session?.user) loginUser(session.user);
+    else { currentUser = null; showPage('pg-auth'); document.getElementById('main-nav').style.display='none'; }
+  });
+} catch(ex) {
+  document.body.innerHTML = '<div style="padding:30px;color:#f87171;background:#060e08;min-height:100vh"><h2 style="color:#4ade80">⛳ GolfTracker</h2><p>Verbindungsfehler: '+ex.message+'</p></div>';
 }
 
-// ── Golf Math ──
+// ── UTILS ──
+const $  = id => document.getElementById(id);
 const genId = () => Math.random().toString(36).slice(2,9);
 const calcCHcp = (idx,sr,cr,par) => Math.round(idx*(sr/113)+(cr-par));
-const strokesOnHole = (chcp,si) => chcp>=0 ? Math.floor(chcp/18)+(si<=chcp%18?1:0) : (si<=Math.abs(chcp)?-1:0);
 const sfNet = (g,par,st) => g ? Math.max(0,2+par+st-g) : 0;
 const sfBrut = (g,par) => g ? Math.max(0,2+par-g) : 0;
+const strokesOnHole = (chcp,si) => chcp>=0 ? Math.floor(chcp/18)+(si<=chcp%18?1:0) : (si<=Math.abs(chcp)?-1:0);
 
-// ── DB Helpers ──
-const DB = {
-  async getRounds(uid){ const{data}=await sb.from("rounds").select("*").eq("user_id",uid).order("date",{ascending:false}); return data||[]; },
-  async saveRound(uid,r){ await sb.from("rounds").insert({user_id:uid,date:r.date,course_id:r.courseId,course_name:r.courseName,tee_type:r.teeType,num_holes:r.numHoles,cr:r.cr,sr:r.sr,par:r.par,hcp_index:r.hcpIndex,course_hcp:r.courseHcp,players:r.players,scores:r.scores,totals:r.totals}); },
-  async getSavedPlayers(uid){ const{data}=await sb.from("saved_players").select("*").eq("owner_id",uid).order("name"); return(data||[]).map(p=>({id:p.id,name:p.name,hcpIndex:p.hcp_index})); },
-  async addPlayer(uid,p){ const{data}=await sb.from("saved_players").insert({owner_id:uid,name:p.name,hcp_index:p.hcpIndex}).select().single(); return{id:data.id,name:data.name,hcpIndex:data.hcp_index}; },
-  async updatePlayer(id,hcp){ await sb.from("saved_players").update({hcp_index:hcp}).eq("id",id); },
-  async deletePlayer(id){ await sb.from("saved_players").delete().eq("id",id); },
-  async getCourses(){ const{data}=await sb.from("courses").select("*").order("name"); return(data||[]).map(c=>({...c,tees:c.tees||{},holes:c.holes||[]})); },
-  async addCourse(uid,c){ await sb.from("courses").insert({id:c.id,name:c.name,location:c.location,tees:c.tees,holes:c.holes,is_preset:false,created_by:uid}); },
-  async deleteCourse(id){ await sb.from("courses").delete().eq("id",id); },
-  async updateCourse(id,d){ await sb.from("courses").update(d).eq("id",id); },
-  async getProfile(uid){ const{data}=await sb.from("profiles").select("*").eq("id",uid).single(); return data; },
-  async updateProfile(uid,d){ await sb.from("profiles").update(d).eq("id",uid); },
-  async getAllProfiles(){ const{data}=await sb.from("profiles").select("*").order("display_name"); return data||[]; },
-  async getAllRounds(){ const{data}=await sb.from("rounds").select("*").order("date",{ascending:false}); return data||[]; },
-};
-
-// ── Shared Components (no JSX) ──
-function div(style, ...children) { return e("div", {style}, ...children); }
-function btn(style, onClick, ...children) { return e("button", {style, onClick}, ...children); }
-
-function TeeChip({teeType}) {
-  const t = TEE[teeType] || TEE.yellow;
-  return e("span", {style:{background:t.bg,color:t.fg,borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:600}}, t.short);
-}
-function Hdr({title, sub}) {
-  return e("div", {style:{marginBottom:18}},
-    e("div", {style:{fontSize:26,fontWeight:700,fontFamily:"Georgia,serif"}}, title),
-    sub && e("div", {style:{fontSize:12,color:T.muted,marginTop:2}}, sub)
-  );
-}
-function Card({style, children}) {
-  return e("div", {className:"card", style}, children);
-}
-function Spinner() {
-  return e("div", {style:{display:"flex",alignItems:"center",justifyContent:"center",padding:40}},
-    e("span", {style:{fontSize:32,display:"inline-block",animation:"spin 1s linear infinite"}}, "⛳")
-  );
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  const navId = 'nav-'+id.replace('pg-','');
+  if ($(navId)) $(navId).classList.add('active');
+  if (id === 'pg-stats') renderStats();
+  if (id === 'pg-courses') renderCourses();
+  if (id === 'pg-round') renderRoundPage();
+  if (id === 'pg-admin') renderAdmin();
+  if (id === 'pg-home') renderHome();
 }
 
-// ── Simple SVG Charts ──
-function SimpleLineChart({data, lines, height=180}) {
-  if (!data || data.length < 2) return e("div",{style:{textAlign:"center",padding:30,color:T.muted,fontSize:12}},"Mindestens 2 Runden für Grafik nötig.");
-  const W=320,H=height,PL=32,PR=8,PT=8,PB=28;
-  return e("svg",{width:"100%",viewBox:`0 0 ${W} ${H}`,style:{overflow:"visible"}},
-    [0,0.5,1].map((t,i)=>e("line",{key:i,x1:PL,x2:W-PR,y1:PT+t*(H-PT-PB),y2:PT+t*(H-PT-PB),stroke:T.faint,strokeWidth:1})),
-    data.map((d,i)=>e("text",{key:i,x:PL+(i/(data.length-1))*(W-PL-PR),y:H,textAnchor:"middle",fill:T.muted,fontSize:9},d.date||`R${i+1}`)),
-    lines.map(l=>{
-      const vals=data.map(d=>d[l.key]||0);
-      const mn=Math.min(...vals),mx=Math.max(...vals),rng=mx-mn||1;
-      const pts=data.map((d,i)=>`${PL+(i/(data.length-1))*(W-PL-PR)},${PT+(1-(d[l.key]||0-mn)/rng)*(H-PT-PB)}`).join(" ");
-      return e("g",{key:l.key},
-        e("polyline",{points:pts,fill:"none",stroke:l.color||T.accent,strokeWidth:2,strokeLinejoin:"round"}),
-        data.map((d,i)=>e("circle",{key:i,cx:PL+(i/(data.length-1))*(W-PL-PR),cy:PT+(1-((d[l.key]||0)-mn)/rng)*(H-PT-PB),r:3,fill:l.color||T.accent}))
-      );
-    }),
-    lines.map((l,i)=>e("g",{key:l.key,transform:`translate(${PL+i*110},${H-4})`},
-      e("line",{x1:0,x2:12,y1:-4,y2:-4,stroke:l.color||T.accent,strokeWidth:2}),
-      e("text",{x:15,y:0,fill:T.muted,fontSize:9},l.label)
-    ))
-  );
-}
-function SimpleBarChart({data,barKey,height=130,color}) {
-  if (!data||!data.length) return null;
-  const W=320,H=height,PL=28,PR=8,PT=8,PB=24;
-  const vals=data.map(d=>d[barKey]||0);
-  const maxV=Math.max(...vals,1);
-  const bw=Math.max(8,Math.min(28,(W-PL-PR)/data.length-4));
-  return e("svg",{width:"100%",viewBox:`0 0 ${W} ${H}`},
-    [0,0.5,1].map((t,i)=>e("line",{key:i,x1:PL,x2:W-PR,y1:PT+t*(H-PT-PB),y2:PT+t*(H-PT-PB),stroke:T.faint,strokeWidth:1})),
-    data.map((d,i)=>{
-      const bh=(d[barKey]||0)/maxV*(H-PT-PB);
-      const bx=PL+(i+0.5)*(W-PL-PR)/data.length-bw/2;
-      return e("g",{key:i},
-        e("rect",{x:bx,y:H-PB-bh,width:bw,height:bh,fill:color||T.blue,rx:3}),
-        e("text",{x:bx+bw/2,y:H,textAnchor:"middle",fill:T.muted,fontSize:9},d.date||d.name)
-      );
-    })
-  );
-}
-function SimpleRadar({data,height=220}) {
-  if (!data||!data.length) return null;
-  const W=280,H=height,CX=W/2,CY=H/2-10,R=75;
-  const n=data.length;
-  const ang=i=>((i/n)*2*Math.PI)-Math.PI/2;
-  const pt=(i,r)=>[CX+r*Math.cos(ang(i)),CY+r*Math.sin(ang(i))];
-  return e("svg",{width:"100%",viewBox:`0 0 ${W} ${H}`},
-    [0.25,0.5,0.75,1].map((g,gi)=>e("polygon",{key:gi,points:data.map((_,i)=>pt(i,R*g).join(",")).join(" "),fill:"none",stroke:T.faint,strokeWidth:1})),
-    data.map((_,i)=>{const[x,y]=pt(i,R);return e("line",{key:i,x1:CX,y1:CY,x2:x,y2:y,stroke:T.faint,strokeWidth:1});}),
-    e("polygon",{points:data.map((d,i)=>pt(i,R*(d.A||0)/100).join(",")).join(" "),fill:T.accent,fillOpacity:.25,stroke:T.accent,strokeWidth:2}),
-    data.map((d,i)=>{const[x,y]=pt(i,R+20);return e("text",{key:i,x,y,textAnchor:"middle",dominantBaseline:"middle",fill:T.muted,fontSize:10},d.subject);})
-  );
+function teeChip(t) {
+  const c = TEE[t]||TEE.yellow;
+  return `<span class="tee-chip" style="background:${c.bg};color:${c.fg}">${c.label}</span>`;
 }
 
-// ══════════════════════════════════════════
-// AUTH SCREEN
-// ══════════════════════════════════════════
-function AuthScreen({onLogin}) {
-  const [mode, setMode] = useState("login");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [pin, setPin] = useState("");
-  const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(false);
+// ── AUTH ──
+let authMode = 'login';
+function authTab(m) {
+  authMode = m;
+  $('reg-fields').style.display = m==='login'?'none':'block';
+  $('auth-btn').textContent = m==='login'?'Einloggen →':'Konto erstellen →';
+  $('tab-login').className = 'btn btn-sm '+(m==='login'?'btn-green':'btn-dark');
+  $('tab-reg').className = 'btn btn-sm '+(m==='reg'?'btn-green':'btn-dark');
+}
+authTab('login');
 
-  const submit = async () => {
-    setErr(""); setLoading(true);
-    try {
-      if (mode === "register") {
-        if (!name.trim()||!email.trim()||pin.length<4) { setErr("Bitte alle Felder ausfüllen (PIN min. 4 Zeichen)"); setLoading(false); return; }
-        const {data,error} = await sb.auth.signUp({email, password:pin, options:{data:{display_name:name.trim()}}});
-        if (error) throw error;
-        if (data.user) onLogin(data.user);
-        else setErr("Konto erstellt — bitte einloggen.");
-      } else {
-        const {data,error} = await sb.auth.signInWithPassword({email, password:pin});
-        if (error) throw error;
-        onLogin(data.user);
-      }
-    } catch(ex) { setErr(ex.message||"Fehler"); }
-    setLoading(false);
-  };
-
-  return e("div",{style:{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
-    e("div",{style:{width:"100%",maxWidth:360}},
-      e("div",{style:{textAlign:"center",marginBottom:28}},
-        e("div",{style:{fontSize:52,marginBottom:8}},"⛳"),
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700}},
-          "Golf", e("span",{style:{color:T.accent}},"Tracker")),
-        e("div",{style:{fontSize:13,color:T.muted,marginTop:4}},"Dein persönlicher Golf-Assistent")
-      ),
-      e("div",{className:"card",style:{padding:24}},
-        // Tabs
-        e("div",{style:{display:"flex",gap:8,marginBottom:20}},
-          ["login","register"].map(m=>btn({
-            flex:1,padding:"10px",background:mode===m?T.accent:T.faint,color:mode===m?"#000":T.muted,
-            border:`1px solid ${mode===m?T.accent:T.border}`,fontSize:13,fontWeight:600
-          }, ()=>{setMode(m);setErr("");}, m==="login"?"Einloggen":"Registrieren"))
-        ),
-        e("div",{style:{display:"grid",gap:12}},
-          mode==="register" && e("label",{style:{fontSize:12,color:T.muted}},"Name",
-            e("input",{style:{marginTop:4},value:name,onChange:ev=>setName(ev.target.value),placeholder:"Vorname Nachname"})
-          ),
-          e("label",{style:{fontSize:12,color:T.muted}},"E-Mail",
-            e("input",{type:"email",style:{marginTop:4},value:email,onChange:ev=>setEmail(ev.target.value),placeholder:"deine@email.de"})
-          ),
-          e("label",{style:{fontSize:12,color:T.muted}},"PIN (min. 4 Zeichen)",
-            e("input",{type:"password",style:{marginTop:4},value:pin,onChange:ev=>setPin(ev.target.value),placeholder:"••••••",onKeyDown:ev=>ev.key==="Enter"&&submit()})
-          )
-        ),
-        err && e("div",{style:{background:"rgba(248,113,113,.1)",border:`1px solid ${T.red}`,borderRadius:8,padding:10,marginTop:12,fontSize:12,color:T.red}},
-          "⚠️ ",err),
-        btn({width:"100%",marginTop:16,background:T.accent,color:"#000",padding:"14px",fontSize:14,fontWeight:600,opacity:loading?0.6:1},
-          submit, loading?"…": mode==="login"?"Einloggen →":"Konto erstellen →")
-      )
-    )
-  );
+async function authSubmit() {
+  const email = $('auth-email').value.trim();
+  const pin   = $('auth-pin').value;
+  const name  = $('auth-name').value.trim();
+  $('auth-err').innerHTML = '';
+  if (!email || pin.length < 4) { $('auth-err').innerHTML = '<div class="err">Bitte alle Felder ausfüllen (PIN min. 4 Zeichen)</div>'; return; }
+  $('auth-btn').textContent = '…';
+  try {
+    if (authMode === 'reg') {
+      const {data,error} = await sb.auth.signUp({email,password:pin,options:{data:{display_name:name||'Spieler'}}});
+      if (error) throw error;
+      if (data.user) loginUser(data.user);
+      else $('auth-err').innerHTML = '<div class="ok">Konto erstellt — bitte einloggen.</div>';
+    } else {
+      const {data,error} = await sb.auth.signInWithPassword({email,password:pin});
+      if (error) throw error;
+      loginUser(data.user);
+    }
+  } catch(ex) {
+    $('auth-err').innerHTML = '<div class="err">⚠️ '+(ex.message||'Fehler')+'</div>';
+    $('auth-btn').textContent = authMode==='login'?'Einloggen →':'Konto erstellen →';
+  }
 }
 
-// ══════════════════════════════════════════
-// MAIN APP
-// ══════════════════════════════════════════
-function App() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [tab, setTab] = useState("home");
-  const [courses, setCourses] = useState([]);
-  const [rounds, setRounds] = useState([]);
-  const [savedPlayers, setSavedPlayers] = useState([]);
-  const [activeRound, setActiveRound] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(()=>{
-    if (!sb) return;
-    // Don't wait - show login immediately, restore session in background
-    setLoading(false);
-    // Check if already logged in (silent, no spinner)
-    sb.auth.getSession().then(({data:{session}})=>{
-      if (session?.user) initUser(session.user);
-    }).catch(()=>{});
-    // Listen for future auth changes
-    const {data:{subscription}} = sb.auth.onAuthStateChange((_,session)=>{
-      if (session?.user) initUser(session.user);
-      else { setUser(null); setProfile(null); }
-    });
-    return ()=>subscription.unsubscribe();
-  },[]);
-
-  const initUser = async (u) => {
-    setUser(u);
-    try {
-      const [prof,rds,sps,crs] = await Promise.all([
-        DB.getProfile(u.id), DB.getRounds(u.id),
-        DB.getSavedPlayers(u.id), DB.getCourses()
-      ]);
-      setProfile(prof); setRounds(rds); setSavedPlayers(sps); setCourses(crs);
-      const ar = localStorage.getItem("gf_ar_"+u.id);
-      if (ar) { setActiveRound(JSON.parse(ar)); setTab("round"); }
-    } catch(err) { console.error("initUser error:", err); }
-    setLoading(false);
-  };
-
-  const updAR = ar => {
-    setActiveRound(ar);
-    if (ar) localStorage.setItem("gf_ar_"+user.id, JSON.stringify(ar));
-    else localStorage.removeItem("gf_ar_"+user.id);
-  };
-  const saveNewRound = async r => {
-    await DB.saveRound(user.id, r);
-    const fresh = await DB.getRounds(user.id);
-    setRounds(fresh);
-  };
-
-  // No spinner - show login or app immediately
-  if (!user || !sb) return e(AuthScreen, {onLogin: u=>initUser(u)});
-
-  const navItems = [
-    ["home","🏠","Home"], ["courses","🗺️","Plätze"],
-    ["round","⛳",activeRound?"Aktiv":"Runde"], ["stats","📊","Stats"],
-    ...(profile?.is_admin ? [["admin","🛡️","Admin"]] : [])
-  ];
-
-  return e("div",{style:{fontFamily:"system-ui,sans-serif",color:T.text,background:T.bg,maxWidth:480,margin:"0 auto",minHeight:"100vh",paddingBottom:76}},
-    tab==="home"    && e(HomeView,    {rounds,profile,setTab,activeRound,userId:user.id,updProfile:async d=>{await DB.updateProfile(user.id,d);setProfile({...profile,...d});}}),
-    tab==="courses" && e(CoursesView, {courses,setCourses,userId:user.id,isAdmin:!!profile?.is_admin}),
-    tab==="round"   && e(RoundView,   {courses,activeRound,setActiveRound:updAR,rounds,saveNewRound,setTab,savedPlayers,setSavedPlayers,userId:user.id}),
-    tab==="stats"   && e(StatsView,   {rounds}),
-    tab==="admin"   && profile?.is_admin && e(AdminView, {}),
-    e("nav",{style:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#040b06",borderTop:`1px solid ${T.border}`,display:"flex",zIndex:200}},
-      navItems.map(([id,ic,lb])=>btn({
-        flex:1,padding:"10px 4px 8px",background:"transparent",
-        color:tab===id?T.accent:T.muted,display:"flex",flexDirection:"column",
-        alignItems:"center",gap:2,fontSize:10,fontWeight:tab===id?600:400
-      }, ()=>setTab(id), e("span",{style:{fontSize:20}},ic), lb)),
-      btn({flex:1,padding:"10px 4px 8px",background:"transparent",color:T.muted,display:"flex",flexDirection:"column",alignItems:"center",gap:2,fontSize:10},
-        async()=>await sb.auth.signOut(), e("span",{style:{fontSize:20}},"👤"), "Logout")
-    )
-  );
+async function loginUser(u) {
+  currentUser = u;
+  try {
+    const [prof,rds,sps,crs] = await Promise.all([
+      sb.from('profiles').select('*').eq('id',u.id).single().then(r=>r.data),
+      sb.from('rounds').select('*').eq('user_id',u.id).order('date',{ascending:false}).then(r=>r.data||[]),
+      sb.from('saved_players').select('*').eq('owner_id',u.id).order('name').then(r=>(r.data||[]).map(p=>({id:p.id,name:p.name,hcpIndex:p.hcp_index}))),
+      sb.from('courses').select('*').order('name').then(r=>(r.data||[]))
+    ]);
+    currentProfile = prof;
+    rounds = rds;
+    savedPlayers = sps;
+    courses = crs;
+    const ar = localStorage.getItem('gf_ar_'+u.id);
+    if (ar) try { activeRound = JSON.parse(ar); } catch(e){}
+  } catch(ex) { console.error('loginUser error:', ex); }
+  document.getElementById('main-nav').style.display = 'flex';
+  if (currentProfile?.is_admin) $('nav-admin').style.display = '';
+  showPage('pg-home');
 }
 
-// ══════════════════════════════════════════
-// HOME VIEW
-// ══════════════════════════════════════════
-function HomeView({rounds,profile,setTab,activeRound,userId,updProfile}) {
-  const [editHcp,setEditHcp] = useState(false);
-  const [hcpD,setHcpD] = useState(profile?.hcp_index||18);
+async function logout() {
+  await sb.auth.signOut();
+  activeRound = null;
+  showPage('pg-auth');
+  $('main-nav').style.display = 'none';
+}
+
+async function editHcp() {
+  const v = prompt('Neuer HCP Index:', parseFloat(currentProfile?.hcp_index||18).toFixed(1));
+  if (!v) return;
+  const hcp = parseFloat(v);
+  if (isNaN(hcp)) return;
+  await sb.from('profiles').update({hcp_index:hcp}).eq('id',currentUser.id);
+  if (currentProfile) currentProfile.hcp_index = hcp;
+  $('home-hcp').textContent = hcp.toFixed(1);
+}
+
+// ── HOME ──
+function renderHome() {
+  $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
+  $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
+  $('stat-rounds').textContent = rounds.length;
+  const nets = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
+  $('stat-avg').textContent = nets.length ? (nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1) : '—';
+  $('stat-best').textContent = rounds.length ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)) : '—';
+
+  if (activeRound) {
+    $('home-active-round').innerHTML = `
+      <div class="card" style="background:linear-gradient(135deg,#166534,#0d2416);border-color:#4ade80;cursor:pointer;margin-bottom:12px;" onclick="showPage('pg-round')">
+        <div style="font-size:11px;color:#4ade80;font-weight:600;letter-spacing:1px;">AKTIVE RUNDE</div>
+        <div style="font-size:16px;font-weight:600;margin-top:2px;">${activeRound.courseName}</div>
+        <div class="muted">${activeRound.players?.length} Spieler · ${activeRound.numHoles} Löcher</div>
+      </div>`;
+  } else { $('home-active-round').innerHTML = ''; }
+
   const last = rounds[0];
-  const recentNets = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
-  const avg = recentNets.length ? (recentNets.reduce((a,b)=>a+b,0)/recentNets.length).toFixed(1) : "—";
-  const best = rounds.length ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)) : "—";
-
-  return e("div",{className:"fade",style:{padding:"24px 16px 16px"}},
-    e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}},
-      e("div",{},
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,lineHeight:1}},
-          "Golf",e("span",{style:{color:T.accent}},"Tracker")),
-        e("div",{style:{color:T.muted,fontSize:12,marginTop:4}},"👋 "+(profile?.display_name||"Spieler"))
-      ),
-      e("div",{style:{textAlign:"right"}},
-        e("div",{style:{fontSize:10,color:T.muted,marginBottom:2}},"HCP Index"),
-        editHcp
-          ? e("div",{style:{display:"flex",gap:6}},
-              e("input",{type:"number",step:"0.1",value:hcpD,onChange:ev=>setHcpD(parseFloat(ev.target.value)),style:{width:80,textAlign:"center",fontSize:16,padding:"4px 8px"}}),
-              btn({background:T.accent,color:"#000",padding:"4px 10px",fontSize:12,borderRadius:8},async()=>{await updProfile({hcp_index:hcpD});setEditHcp(false);},"✓")
-            )
-          : e("div",{onClick:()=>setEditHcp(true),style:{cursor:"pointer",background:T.accentGlow,border:`1px solid ${T.accent}`,borderRadius:10,padding:"4px 14px",display:"inline-block"}},
-              e("span",{style:{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:T.accent}},parseFloat(profile?.hcp_index??18).toFixed(1))
-            )
-      )
-    ),
-    activeRound && e("div",{onClick:()=>setTab("round"),style:{background:`linear-gradient(135deg,${T.accentDim},#0d2416)`,border:`1px solid ${T.accent}`,borderRadius:14,padding:"14px 18px",marginBottom:16,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      e("div",{},
-        e("div",{style:{fontSize:11,color:T.accent,fontWeight:600,letterSpacing:1}},"AKTIVE RUNDE"),
-        e("div",{style:{fontSize:16,fontWeight:600,marginTop:2}},activeRound.courseName),
-        e("div",{style:{fontSize:12,color:T.muted}},(activeRound.players?.length||1)+" Spieler · "+activeRound.numHoles+" Löcher")
-      ),
-      e("div",{style:{fontSize:28}},"▶")
-    ),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}},
-      [["Runden",rounds.length],["⌀ Netto",avg],["Beste",best]].map(([l,v])=>
-        e("div",{key:l,className:"card",style:{textAlign:"center",padding:"14px 8px"}},
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:26,fontWeight:700,color:T.accent}},v),
-          e("div",{style:{fontSize:10,color:T.muted,marginTop:2}},l)
-        )
-      )
-    ),
-    last && e("div",{className:"card",style:{marginBottom:12}},
-      e("div",{style:{fontSize:11,color:T.muted,fontWeight:600,letterSpacing:1,marginBottom:8}},"LETZTE RUNDE"),
-      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-        e("div",{},
-          e("div",{style:{fontSize:15,fontWeight:600}},last.course_name||last.courseName),
-          e("div",{style:{fontSize:12,color:T.muted}},new Date(last.date).toLocaleDateString("de-DE")+" · "+(last.num_holes||18)+"L"),
-          e("div",{style:{marginTop:4}},e(TeeChip,{teeType:last.tee_type||last.teeType||"yellow"}))
-        ),
-        e("div",{style:{textAlign:"right"}},
-          e("div",{style:{fontSize:10,color:T.muted}},"Netto Stableford"),
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:34,fontWeight:700,color:T.accent,lineHeight:1}},
-            last.totals?.[last.players?.[0]?.id]?.nettoStableford||"—"),
-          e("div",{style:{fontSize:11,color:T.muted}},"Brutto: "+(last.totals?.[last.players?.[0]?.id]?.bruttoScore||"—"))
-        )
-      )
-    ),
-    !activeRound && btn({width:"100%",background:`linear-gradient(135deg,${T.accentDim},${T.faint})`,color:T.accent,padding:"16px",fontSize:15,fontWeight:600,border:`1px solid ${T.accent}`,borderRadius:10,marginTop:8},
-      ()=>setTab("round"), "⛳ Neue Runde starten")
-  );
+  if (last) {
+    const p0 = last.players?.[0]; const t = last.totals?.[p0?.id]||{};
+    $('home-last-round').innerHTML = `
+      <div class="card" style="margin-bottom:12px;">
+        <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:8px;">LETZTE RUNDE</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:15px;font-weight:600;">${last.course_name||'—'}</div>
+            <div class="muted">${new Date(last.date).toLocaleDateString('de-DE')} · ${last.num_holes||18}L</div>
+            <div style="margin-top:4px;">${teeChip(last.tee_type||'yellow')}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="muted" style="font-size:10px;">Netto Stableford</div>
+            <div class="big-num">${t.nettoStableford||'—'}</div>
+            <div class="muted">Brutto: ${t.bruttoScore||'—'}</div>
+          </div>
+        </div>
+      </div>`;
+  } else { $('home-last-round').innerHTML = ''; }
 }
 
-// ══════════════════════════════════════════
-// COURSES VIEW
-// ══════════════════════════════════════════
-function CoursesView({courses,setCourses,userId,isAdmin}) {
-  const [mode,setMode] = useState("list");
-  const [editCourse,setEditCourse] = useState(null);
-  const [form,setForm] = useState({name:"",location:"",holes:18});
-  const [teeForm,setTeeForm] = useState({yellow:{cr:"",sr:"",par:"72"},green:{cr:"",sr:"",par:"72"},red:{cr:"",sr:"",par:"72"},blue:{cr:"",sr:"",par:"72"},orange:{cr:"",sr:"",par:"72"}});
-  const [saving,setSaving] = useState(false);
-  const [delConfirm,setDelConfirm] = useState(null);
+// ── COURSES ──
+function renderCourses() {
+  $('courses-list').innerHTML = courses.map(c => `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h3>${c.name} ${c.is_preset?'<span style="font-size:9px;color:#4ade80;background:#22c55e22;border:1px solid #4ade8044;border-radius:4px;padding:1px 5px;">PRESET</span>':''}</h3>
+          <div class="muted">${c.location||''}</div>
+          <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;">${Object.keys(c.tees||{}).map(k=>teeChip(k)).join('')}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${currentProfile?.is_admin||(!c.is_preset&&c.created_by===currentUser?.id)?`<button class="tog btn-sm" onclick="editCourse('${c.id}')">✏️</button>`:''}
+          ${currentProfile?.is_admin||(!c.is_preset&&c.created_by===currentUser?.id)?`<button class="tog btn-sm" style="color:#f87171;" onclick="deleteCourse('${c.id}')">🗑</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
 
-  const canEdit = c => isAdmin || (c.created_by===userId && !c.is_preset);
-  const canDelete = c => isAdmin || (!c.is_preset && c.created_by===userId);
-
-  const addCourse = async () => {
-    setSaving(true);
-    const tees = {};
-    Object.entries(teeForm).forEach(([k,v])=>{ if(v.cr) tees[k]={cr:parseFloat(v.cr),sr:parseInt(v.sr)||113,par:parseInt(v.par)||72}; });
-    const nc = {id:genId(),name:form.name,location:form.location,tees,holes:Array.from({length:parseInt(form.holes)||18},(_,i)=>({par:4,si:i+1,dist:300}))};
-    await DB.addCourse(userId, nc);
-    setCourses([...courses, {...nc,is_preset:false}]);
-    setMode("list"); setSaving(false);
-  };
-
-  const openEdit = c => {
-    setEditCourse({...c});
-    const tf = {};
-    Object.entries(c.tees||{}).forEach(([k,v])=>{ tf[k]={cr:v.cr||"",sr:v.sr||"",par:v.par||"72"}; });
-    Object.keys(TEE).forEach(k=>{ if(!tf[k]) tf[k]={cr:"",sr:"",par:"72"}; });
-    setTeeForm(tf); setMode("edit");
-  };
-
-  const saveEdit = async () => {
-    setSaving(true);
-    const tees = {};
-    Object.entries(teeForm).forEach(([k,v])=>{ if(v.cr) tees[k]={cr:parseFloat(v.cr),sr:parseInt(v.sr)||113,par:parseInt(v.par)||72}; });
-    await DB.updateCourse(editCourse.id, {name:editCourse.name,location:editCourse.location,tees});
-    setCourses(courses.map(c=>c.id===editCourse.id?{...editCourse,tees}:c));
-    setMode("list"); setSaving(false); setEditCourse(null);
-  };
-
-  const delCourse = async id => {
-    await DB.deleteCourse(id);
-    setCourses(courses.filter(c=>c.id!==id));
-    setDelConfirm(null);
-  };
-
-  const teeInput = (teeKey) => e("div",{key:teeKey,style:{background:T.bg,border:`1px solid ${T.border}`,borderRadius:12,padding:12,marginBottom:8}},
-    e(TeeChip,{teeType:teeKey}),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:8}},
-      ["cr","sr","par"].map(f=>e("label",{key:f,style:{fontSize:11,color:T.muted}},f.toUpperCase(),
-        e("input",{type:"number",step:"0.1",style:{marginTop:3,padding:"8px 10px"},value:teeForm[teeKey]?.[f]||"",
-          onChange:ev=>setTeeForm({...teeForm,[teeKey]:{...teeForm[teeKey],[f]:ev.target.value}})})
-      ))
-    )
-  );
-
-  if (mode==="edit" && editCourse) return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Platz bearbeiten",sub:editCourse.name}),
-    e("div",{style:{display:"grid",gap:12,marginBottom:16}},
-      e("label",{style:{fontSize:12,color:T.muted}},"Platzname",e("input",{style:{marginTop:4},value:editCourse.name,onChange:ev=>setEditCourse({...editCourse,name:ev.target.value})})),
-      e("label",{style:{fontSize:12,color:T.muted}},"Ort",e("input",{style:{marginTop:4},value:editCourse.location||"",onChange:ev=>setEditCourse({...editCourse,location:ev.target.value})}))
-    ),
-    e("div",{style:{fontSize:13,color:T.accent,fontWeight:600,marginBottom:10}},"Abschlag-Daten"),
-    Object.keys(TEE).map(k=>teeInput(k)),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}},
-      btn({background:T.faint,color:T.text,padding:"12px",border:`1px solid ${T.border}`,borderRadius:10},()=>{setMode("list");setEditCourse(null);},"← Abbrechen"),
-      btn({background:T.accent,color:"#000",padding:"12px",fontWeight:600,borderRadius:10},saveEdit,saving?"…":"✓ Speichern")
-    )
-  );
-
-  if (mode==="add") return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Platz hinzufügen",sub:"Manuell"}),
-    e("div",{style:{display:"grid",gap:12,marginBottom:16}},
-      e("label",{style:{fontSize:12,color:T.muted}},"Platzname",e("input",{style:{marginTop:4},value:form.name,onChange:ev=>setForm({...form,name:ev.target.value}),placeholder:"z.B. Golfclub München"})),
-      e("label",{style:{fontSize:12,color:T.muted}},"Ort",e("input",{style:{marginTop:4},value:form.location,onChange:ev=>setForm({...form,location:ev.target.value}),placeholder:"Bayern, Deutschland"})),
-      e("label",{style:{fontSize:12,color:T.muted}},"Löcher",e("select",{style:{marginTop:4},value:form.holes,onChange:ev=>setForm({...form,holes:ev.target.value})},e("option",{value:9},"9"),e("option",{value:18},"18")))
-    ),
-    e("div",{style:{fontSize:13,color:T.accent,fontWeight:600,marginBottom:10}},"Abschlag-Daten (CR / SR / Par)"),
-    Object.keys(TEE).map(k=>teeInput(k)),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:8}},
-      btn({background:T.faint,color:T.text,padding:"12px",border:`1px solid ${T.border}`,borderRadius:10},()=>setMode("list"),"← Zurück"),
-      btn({background:T.accent,color:"#000",padding:"12px",fontWeight:600,borderRadius:10,opacity:form.name?1:0.5},addCourse,saving?"…":"✓ Speichern")
-    )
-  );
-
-  return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Plätze",sub:`${courses.length} Plätze`}),
-    delConfirm && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
-      e("div",{className:"card",style:{border:`1px solid ${T.red}`,padding:24,maxWidth:340,width:"100%"}},
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700,marginBottom:8}},"Platz löschen?"),
-        e("div",{style:{fontSize:13,color:T.muted,marginBottom:16}},`„${courses.find(c=>c.id===delConfirm)?.name}" wird für alle entfernt.`),
-        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
-          btn({background:T.faint,color:T.text,padding:"12px",border:`1px solid ${T.border}`,borderRadius:10},()=>setDelConfirm(null),"Abbrechen"),
-          btn({background:T.red,color:"#fff",padding:"12px",fontWeight:600,borderRadius:10},()=>delCourse(delConfirm),"🗑 Löschen")
-        )
-      )
-    ),
-    e("div",{style:{display:"grid",gap:10,marginBottom:16}},
-      courses.map(c=>e("div",{key:c.id,className:"card"},
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}},
-          e("div",{style:{flex:1}},
-            e("div",{style:{display:"flex",alignItems:"center",gap:8}},
-              e("div",{style:{fontSize:15,fontWeight:600}},c.name),
-              c.is_preset && e("span",{style:{fontSize:9,color:T.accent,background:T.accentGlow,borderRadius:4,padding:"1px 5px"}},"PRESET")
-            ),
-            e("div",{style:{fontSize:12,color:T.muted}},c.location),
-            e("div",{style:{marginTop:6,display:"flex",gap:4,flexWrap:"wrap"}},Object.keys(c.tees||{}).map(k=>e(TeeChip,{key:k,teeType:k})))
-          ),
-          (canEdit(c)||canDelete(c)) && e("div",{style:{display:"flex",gap:6,marginLeft:8}},
-            canEdit(c) && btn({background:T.faint,color:T.accent,padding:"6px 10px",fontSize:14,border:`1px solid ${T.border}`,borderRadius:8},()=>openEdit(c),"✏️"),
-            canDelete(c) && btn({background:"transparent",color:T.red,padding:"6px 10px",fontSize:16,border:`1px solid rgba(248,113,113,.3)`,borderRadius:8},()=>setDelConfirm(c.id),"🗑")
-          )
-        )
-      ))
-    ),
-    e("div",{style:{fontSize:11,color:T.muted,textAlign:"center",marginBottom:10,padding:"8px",background:T.faint,borderRadius:8}},"🌐 Alle Plätze sind für alle Spieler sichtbar"),
-    btn({width:"100%",background:T.faint,color:T.text,padding:"14px",border:`1px solid ${T.border}`,borderRadius:10},()=>setMode("add"),"✍️ Platz hinzufügen")
-  );
+  // Build tee inputs for add form
+  $('nc-tees').innerHTML = Object.entries(TEE).map(([k,v]) => `
+    <div style="background:#060e08;border:1px solid #173320;border-radius:10px;padding:10px;margin-top:8px;">
+      <span class="tee-chip" style="background:${v.bg};color:${v.fg}">${v.label}</span>
+      <div class="grid3" style="margin-top:8px;">
+        <div><label class="label">CR</label><input id="nc-${k}-cr" type="number" step="0.1" placeholder="72.4"/></div>
+        <div><label class="label">SR</label><input id="nc-${k}-sr" type="number" placeholder="139"/></div>
+        <div><label class="label">Par</label><input id="nc-${k}-par" type="number" placeholder="72"/></div>
+      </div>
+    </div>`).join('');
 }
 
-// ══════════════════════════════════════════
-// ROUND VIEW
-// ══════════════════════════════════════════
-function RoundView({courses,activeRound,setActiveRound,rounds,saveNewRound,setTab,savedPlayers,setSavedPlayers,userId}) {
-  const [phase,setPhase] = useState(activeRound?"play":"setup");
-  const [lastRound,setLastRound] = useState(null);
+function showAddCourse() {
+  $('add-course-form').style.display = $('add-course-form').style.display==='none'?'block':'none';
+  renderCourses();
+}
 
-  const startRound = cfg => {
-    const td = cfg.course.tees[cfg.teeType]||{cr:72,sr:113,par:72};
-    const holes = (cfg.course.holes||[]).slice(0,cfg.numHoles).map((h,i)=>({holeNum:i+1,par:h.par||4,si:h.si||i+1,dist:h.dist||0}));
-    const players = cfg.players.map(p=>({...p,courseHcp:calcCHcp(p.hcpIndex,td.sr,td.cr,td.par)}));
-    const scores = {};
-    players.forEach(p=>{ scores[p.id]=holes.map(h=>({holeNum:h.holeNum,par:h.par,si:h.si,gross:0,fairway:null,gir:null,putts:null,bunker:false,sandSave:null,ob:0})); });
-    const r = {id:genId(),date:cfg.date,courseId:cfg.course.id,courseName:cfg.course.name,teeType:cfg.teeType,numHoles:cfg.numHoles,cr:td.cr,sr:td.sr,par:td.par,hcpIndex:cfg.players[0]?.hcpIndex,courseHcp:players[0]?.courseHcp,players,scores};
-    setActiveRound(r); setPhase("play");
-  };
+async function saveCourse() {
+  const name = $('nc-name').value.trim();
+  if (!name) { alert('Bitte Platzname eingeben'); return; }
+  const tees = {};
+  Object.keys(TEE).forEach(k => {
+    const cr = $(`nc-${k}-cr`)?.value;
+    if (cr) tees[k] = {cr:parseFloat(cr),sr:parseInt($(`nc-${k}-sr`)?.value)||113,par:parseInt($(`nc-${k}-par`)?.value)||72};
+  });
+  const holes = parseInt($('nc-holes').value)||18;
+  const nc = {id:genId(),name,location:$('nc-loc').value,tees,holes:Array.from({length:holes},(_,i)=>({par:4,si:i+1,dist:300}))};
+  await sb.from('courses').insert({...nc,is_preset:false,created_by:currentUser.id});
+  courses.push({...nc,is_preset:false,created_by:currentUser.id});
+  $('add-course-form').style.display='none';
+  renderCourses();
+}
 
-  const finishRound = async r => {
-    const totals = {};
-    r.players.forEach(p=>{
-      const sc = r.scores[p.id]||[];
-      totals[p.id] = {
-        bruttoScore:sc.reduce((s,h)=>s+(h.gross||0),0),
-        nettoStableford:sc.reduce((s,h)=>s+sfNet(h.gross,h.par,strokesOnHole(p.courseHcp,h.si)),0),
-        bruttoStableford:sc.reduce((s,h)=>s+sfBrut(h.gross,h.par),0),
-        gir:sc.filter(h=>h.gir).length, fairways:sc.filter(h=>h.fairway&&h.par!==3).length,
-        putts:sc.reduce((s,h)=>s+(h.putts||0),0), ob:sc.reduce((s,h)=>s+(h.ob||0),0)
-      };
-    });
-    const completed = {...r,totals};
-    await saveNewRound(completed);
-    setLastRound(completed); setActiveRound(null); setPhase("summary");
-  };
+async function deleteCourse(id) {
+  const c = courses.find(x=>x.id===id);
+  if (!confirm(`„${c?.name}" löschen?`)) return;
+  await sb.from('courses').delete().eq('id',id);
+  courses = courses.filter(x=>x.id!==id);
+  renderCourses();
+}
 
-  if (phase==="summary") return e(RoundSummary,{round:lastRound||rounds[0],setTab,onNew:()=>setPhase("setup")});
-  if (phase==="play" && activeRound) return e(HoleEntry,{round:activeRound,setRound:setActiveRound,onSave:finishRound,onDiscard:()=>{setActiveRound(null);setPhase("setup");}});
-  return e(RoundSetup,{courses,onStart:startRound,setTab,savedPlayers,setSavedPlayers,userId});
+function editCourse(id) {
+  const c = courses.find(x=>x.id===id);
+  if (!c) return;
+  const name = prompt('Platzname:', c.name);
+  if (!name) return;
+  c.name = name;
+  sb.from('courses').update({name}).eq('id',id);
+  renderCourses();
 }
 
 // ── ROUND SETUP ──
-function RoundSetup({courses,onStart,setTab,savedPlayers,setSavedPlayers,userId}) {
-  const today = new Date().toISOString().split("T")[0];
-  const [selCourse,setSelCourse] = useState(courses[0]?.id||"");
-  const [teeType,setTeeType] = useState("yellow");
-  const [numHoles,setNumHoles] = useState(18);
-  const [date,setDate] = useState(today);
-  const [selectedIds,setSelectedIds] = useState([]);
-  const [showAdd,setShowAdd] = useState(false);
-  const [newName,setNewName] = useState("");
-  const [newHcp,setNewHcp] = useState(18.0);
-  const [editMode,setEditMode] = useState(false);
-  const [saving,setSaving] = useState(false);
+function renderRoundPage() {
+  if (activeRound) {
+    $('round-page-title').textContent = 'Aktive Runde';
+    $('round-active-banner').innerHTML = `
+      <div class="card" style="background:linear-gradient(135deg,#166534,#0d2416);border-color:#4ade80;margin-bottom:12px;">
+        <div style="font-size:11px;color:#4ade80;font-weight:600;">AKTIVE RUNDE — ${activeRound.courseName}</div>
+        <button class="btn btn-green" style="margin-top:8px;" onclick="resumeRound()">▶ Weiterspielen</button>
+        <button class="btn btn-red" style="margin-top:6px;" onclick="discardRound()">🗑 Verwerfen</button>
+      </div>`;
+    $('round-setup-form').style.display = 'none';
+    $('hole-entry').style.display = 'none';
+  } else {
+    $('round-page-title').textContent = 'Neue Runde';
+    $('round-active-banner').innerHTML = '';
+    $('round-setup-form').style.display = 'block';
+    $('hole-entry').style.display = 'none';
+    const today = new Date().toISOString().split('T')[0];
+    $('rs-date').value = today;
+    renderCourseSelect();
+    renderPlayersList();
+  }
+}
 
-  const course = courses.find(c=>c.id===selCourse);
-  const teeData = course?.tees?.[teeType];
-  const players = savedPlayers.filter(p=>selectedIds.includes(p.id));
-  const toggleSel = id => setSelectedIds(selectedIds.includes(id)?selectedIds.filter(x=>x!==id):[...selectedIds,id].slice(0,4));
+function resumeRound() {
+  $('round-active-banner').innerHTML = '';
+  $('round-setup-form').style.display = 'none';
+  $('hole-entry').style.display = 'block';
+  renderHoleEntry();
+}
 
-  const saveNewPlayer = async () => {
-    if (!newName.trim()) return; setSaving(true);
-    const np = await DB.addPlayer(userId,{name:newName.trim(),hcpIndex:newHcp});
-    setSavedPlayers([...savedPlayers,np]); setSelectedIds([...selectedIds,np.id]);
-    setNewName(""); setNewHcp(18.0); setShowAdd(false); setSaving(false);
-  };
+function discardRound() {
+  if (!confirm('Runde verwerfen?')) return;
+  activeRound = null;
+  localStorage.removeItem('gf_ar_'+currentUser.id);
+  renderRoundPage();
+}
 
-  return e("div",{className:"fade",style:{padding:"24px 16px 100px"}},
-    e(Hdr,{title:"Neue Runde",sub:"Konfigurieren"}),
-    e("div",{style:{marginBottom:16}},
-      e("label",{style:{fontSize:12,color:T.muted}},"📅 Datum",
-        e("input",{type:"date",style:{marginTop:4},value:date,onChange:ev=>setDate(ev.target.value)})
-      ),
-      date!==today && e("div",{style:{fontSize:11,color:T.yellow,marginTop:4}},"⚠️ Nachträgliche Erfassung")
-    ),
-    e("div",{style:{marginBottom:16}},
-      e("label",{style:{fontSize:12,color:T.muted}},"⛳ Golfplatz",
-        e("select",{style:{marginTop:4},value:selCourse,onChange:ev=>{setSelCourse(ev.target.value);setTeeType("yellow");}},
-          courses.map(c=>e("option",{key:c.id,value:c.id},c.name))
-        )
-      )
-    ),
-    e("div",{style:{marginBottom:16}},
-      e("div",{style:{fontSize:12,color:T.muted,marginBottom:8}},"🔢 Löcher"),
-      e("div",{style:{display:"flex",gap:8}},
-        [9,18].map(n=>btn({flex:1,padding:"10px",fontSize:14,fontWeight:600,borderRadius:8,border:`1px solid ${numHoles===n?T.accent:T.faint}`,background:numHoles===n?T.accentGlow:T.faint,color:numHoles===n?T.accent:T.muted},()=>setNumHoles(n),n+" Löcher"))
-      )
-    ),
-    e("div",{style:{marginBottom:16}},
-      e("div",{style:{fontSize:12,color:T.muted,marginBottom:8}},"🎯 Abschlag"),
-      e("div",{style:{display:"flex",gap:8,flexWrap:"wrap"}},
-        Object.keys(course?.tees||TEE).map(k=>e("button",{key:k,className:"tg"+(teeType===k?" on":""),onClick:()=>setTeeType(k)},TEE[k]?.label||k))
-      )
-    ),
-    teeData && e("div",{className:"card",style:{marginBottom:16}},
-      e("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",textAlign:"center",gap:8,marginBottom:players.length>0?12:0}},
-        [["CR",teeData.cr],["Slope",teeData.sr],["Par",teeData.par]].map(([l,v])=>
-          e("div",{key:l},e("div",{style:{fontFamily:"Georgia,serif",fontSize:22,color:T.accent}},v),e("div",{style:{fontSize:10,color:T.muted}},l))
-        )
-      ),
-      players.length>0 && e("div",{style:{borderTop:`1px solid ${T.border}`,paddingTop:10,display:"flex",flexWrap:"wrap",gap:8}},
-        players.map(p=>e("div",{key:p.id,style:{fontSize:11,color:T.muted,background:T.faint,borderRadius:6,padding:"3px 8px"}},
-          p.name+": ",e("span",{style:{color:T.accent,fontWeight:600}},"HCP "+calcCHcp(p.hcpIndex,teeData.sr,teeData.cr,teeData.par))
-        ))
-      )
-    ),
-    e("div",{style:{marginBottom:20}},
-      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
-        e("div",{style:{fontSize:12,color:T.muted}},"👥 Spieler ",e("span",{style:{color:T.accent}},"("+selectedIds.length+")")),
-        e("div",{style:{display:"flex",gap:6}},
-          savedPlayers.length>0 && e("button",{className:"tg"+(editMode?" on":""),onClick:()=>setEditMode(!editMode)},editMode?"✓ Fertig":"✏️"),
-          e("button",{className:"tg",onClick:()=>setShowAdd(!showAdd),"style":{color:T.accent}},"+Neu")
-        )
-      ),
-      showAdd && e("div",{className:"card",style:{border:`1px solid ${T.accent}`,marginBottom:10,padding:14}},
-        e("div",{style:{display:"grid",gridTemplateColumns:"2fr 1fr",gap:8,marginBottom:10}},
-          e("label",{style:{fontSize:11,color:T.muted}},"Name",e("input",{style:{marginTop:3},value:newName,onChange:ev=>setNewName(ev.target.value),placeholder:"Vorname"})),
-          e("label",{style:{fontSize:11,color:T.muted}},"HCP",e("input",{type:"number",step:"0.1",style:{marginTop:3},value:newHcp,onChange:ev=>setNewHcp(parseFloat(ev.target.value)||0)}))
-        ),
-        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
-          btn({background:T.faint,color:T.muted,padding:"8px",border:`1px solid ${T.border}`,borderRadius:8,fontSize:12},()=>{setShowAdd(false);setNewName("");},"Abbrechen"),
-          btn({background:T.accent,color:"#000",padding:"8px",fontWeight:600,borderRadius:8,fontSize:12,opacity:newName.trim()?1:0.5},saveNewPlayer,saving?"…":"💾 Speichern")
-        )
-      ),
-      savedPlayers.length===0 && !showAdd && e("div",{style:{textAlign:"center",padding:"20px",color:T.muted,fontSize:13}},"Klicke auf ",e("span",{style:{color:T.accent}},"+Neu")," um Spieler anzulegen."),
-      savedPlayers.map(p=>{
-        const sel = selectedIds.includes(p.id);
-        return e("div",{key:p.id,onClick:()=>!editMode&&toggleSel(p.id),
-          style:{background:sel?T.accentGlow:T.card,border:`1px solid ${sel?T.accent:T.border}`,borderRadius:12,padding:"12px 14px",marginBottom:8,cursor:editMode?"default":"pointer",display:"flex",alignItems:"center",gap:12}},
-          e("div",{style:{width:28,height:28,borderRadius:"50%",background:sel?T.accent:T.faint,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:14}},sel?"✓":"👤"),
-          e("div",{style:{flex:1}},
-            e("div",{style:{fontSize:14,fontWeight:600,color:sel?T.accent:T.text}},p.name),
-            editMode
-              ? e("div",{style:{display:"flex",alignItems:"center",gap:6,marginTop:4}},
-                  e("span",{style:{fontSize:11,color:T.muted}},"HCP:"),
-                  e("input",{type:"number",step:"0.1",value:p.hcpIndex,style:{width:70,padding:"4px 8px",fontSize:12},
-                    onChange:async ev=>{const v=parseFloat(ev.target.value)||0;await DB.updatePlayer(p.id,v);setSavedPlayers(savedPlayers.map(x=>x.id===p.id?{...x,hcpIndex:v}:x));},
-                    onClick:ev=>ev.stopPropagation()})
-                )
-              : e("div",{style:{fontSize:11,color:T.muted}},"HCP "+parseFloat(p.hcpIndex||0).toFixed(1)+(teeData?` · Platz-HCP ${calcCHcp(p.hcpIndex,teeData.sr,teeData.cr,teeData.par)}`:""))
-          ),
-          editMode && btn({background:"transparent",color:T.red,padding:"4px 8px",fontSize:18,border:`1px solid rgba(248,113,113,.3)`,borderRadius:8},
-            async ev=>{ev.stopPropagation();await DB.deletePlayer(p.id);setSavedPlayers(savedPlayers.filter(x=>x.id!==p.id));setSelectedIds(selectedIds.filter(x=>x!==p.id));},"🗑")
-        );
-      })
-    ),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
-      btn({background:T.faint,color:T.text,padding:"14px",border:`1px solid ${T.border}`,borderRadius:10},()=>setTab("home"),"← Zurück"),
-      btn({background:T.accent,color:"#000",padding:"14px",fontWeight:600,borderRadius:10,opacity:(course&&teeData&&players.length>0)?1:0.5},
-        ()=>onStart({course,teeType,numHoles,date,players}),"▶ Starten")
-    )
-  );
+function renderCourseSelect() {
+  $('rs-course').innerHTML = courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  updateTeeOptions();
+}
+
+function setHoles(n) {
+  selectedHoles = n;
+  $('btn-9').className = 'tog'+(n===9?' on':'');
+  $('btn-18').className = 'tog'+(n===18?' on':'');
+}
+setHoles(9);
+
+function updateTeeOptions() {
+  const c = courses.find(x=>x.id===$('rs-course').value);
+  if (!c) return;
+  const tees = Object.keys(c.tees||{});
+  if (!tees.includes(selectedTee)) selectedTee = tees[0]||'yellow';
+  $('tee-options').innerHTML = tees.map(k=>`
+    <button class="tog${selectedTee===k?' on':''}" onclick="selectTee('${k}')">${TEE[k]?.label||k}</button>`).join('');
+  updateCourseInfo();
+}
+
+function selectTee(t) {
+  selectedTee = t;
+  updateTeeOptions();
+}
+
+function updateCourseInfo() {
+  const c = courses.find(x=>x.id===$('rs-course').value);
+  const td = c?.tees?.[selectedTee];
+  if (!td) { $('rs-course-info').innerHTML=''; return; }
+  const hcp = parseFloat(currentProfile?.hcp_index||18);
+  const chcp = calcCHcp(hcp, td.sr, td.cr, td.par);
+  $('rs-course-info').innerHTML = `
+    <div class="grid3">
+      <div class="stat-box"><div class="big-num" style="font-size:20px;">${td.cr}</div><div class="muted" style="font-size:10px;">CR</div></div>
+      <div class="stat-box"><div class="big-num" style="font-size:20px;">${td.sr}</div><div class="muted" style="font-size:10px;">Slope</div></div>
+      <div class="stat-box"><div class="big-num" style="font-size:20px;">${td.par}</div><div class="muted" style="font-size:10px;">Par</div></div>
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#6b9e7a;">Dein Platz-HCP: <span style="color:#4ade80;font-weight:600;">${chcp}</span></div>`;
+}
+
+function renderPlayersList() {
+  $('players-list').innerHTML = savedPlayers.map(p => {
+    const sel = selectedPlayerIds.includes(p.id);
+    const c = courses.find(x=>x.id===$('rs-course')?.value);
+    const td = c?.tees?.[selectedTee];
+    const chcp = td ? calcCHcp(p.hcpIndex, td.sr, td.cr, td.par) : '';
+    return `
+      <div class="player-card${sel?' sel':''}" onclick="${editPlayersMode?'':''}" id="pc-${p.id}">
+        <div class="avatar${sel?' sel':''}" onclick="togglePlayer('${p.id}')">${sel?'✓':'👤'}</div>
+        <div style="flex:1;" onclick="togglePlayer('${p.id}')">
+          <div style="font-size:14px;font-weight:600;color:${sel?'#4ade80':'#ecfdf5'}">${p.name}</div>
+          ${editPlayersMode
+            ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;"><span class="muted" style="font-size:11px;">HCP:</span><input type="number" step="0.1" value="${p.hcpIndex}" style="width:70px;padding:4px 8px;font-size:12px;" onchange="updatePlayerHcp('${p.id}',this.value)" onclick="event.stopPropagation()"/></div>`
+            : `<div class="muted" style="font-size:11px;">HCP ${parseFloat(p.hcpIndex).toFixed(1)}${chcp!==''?' · Platz-HCP '+chcp:''}</div>`
+          }
+        </div>
+        ${editPlayersMode?`<button class="tog btn-sm" style="color:#f87171;" onclick="deletePlayer('${p.id}');event.stopPropagation()">🗑</button>`:''}
+      </div>`;
+  }).join('') + (savedPlayers.length===0&&!editPlayersMode?'<div class="muted" style="text-align:center;padding:20px;">Klicke auf <span style="color:#4ade80">+ Neu</span> um Spieler anzulegen.</div>':'');
+}
+
+function togglePlayer(id) {
+  if (editPlayersMode) return;
+  if (selectedPlayerIds.includes(id)) selectedPlayerIds = selectedPlayerIds.filter(x=>x!==id);
+  else if (selectedPlayerIds.length<4) selectedPlayerIds.push(id);
+  $('sel-count').textContent = '('+selectedPlayerIds.length+')';
+  renderPlayersList();
+}
+
+function toggleEditPlayers() {
+  editPlayersMode = !editPlayersMode;
+  $('edit-players-btn').className = 'tog btn-sm' + (editPlayersMode?' on':'');
+  $('edit-players-btn').textContent = editPlayersMode ? '✓ Fertig' : '✏️';
+  renderPlayersList();
+}
+
+function toggleAddPlayer() {
+  const f = $('add-player-form');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+
+async function saveNewPlayer() {
+  const name = $('np-name').value.trim();
+  const hcp  = parseFloat($('np-hcp').value)||18;
+  if (!name) return;
+  const {data} = await sb.from('saved_players').insert({owner_id:currentUser.id,name,hcp_index:hcp}).select().single();
+  if (data) { savedPlayers.push({id:data.id,name:data.name,hcpIndex:data.hcp_index}); selectedPlayerIds.push(data.id); }
+  $('np-name').value=''; $('np-hcp').value='18.0';
+  toggleAddPlayer();
+  $('sel-count').textContent='('+selectedPlayerIds.length+')';
+  renderPlayersList();
+}
+
+async function updatePlayerHcp(id,val) {
+  const hcp = parseFloat(val)||0;
+  await sb.from('saved_players').update({hcp_index:hcp}).eq('id',id);
+  savedPlayers = savedPlayers.map(p=>p.id===id?{...p,hcpIndex:hcp}:p);
+}
+
+async function deletePlayer(id) {
+  await sb.from('saved_players').delete().eq('id',id);
+  savedPlayers = savedPlayers.filter(p=>p.id!==id);
+  selectedPlayerIds = selectedPlayerIds.filter(x=>x!==id);
+  $('sel-count').textContent='('+selectedPlayerIds.length+')';
+  renderPlayersList();
+}
+
+// ── START ROUND ──
+function startRound() {
+  const course = courses.find(c=>c.id===$('rs-course').value);
+  const td = course?.tees?.[selectedTee];
+  if (!course||!td) { alert('Bitte Platz und Abschlag wählen'); return; }
+  const players = savedPlayers.filter(p=>selectedPlayerIds.includes(p.id));
+  if (!players.length) { alert('Bitte mindestens einen Spieler auswählen'); return; }
+  const date = $('rs-date').value || new Date().toISOString().split('T')[0];
+  const holes = (course.holes||[]).slice(0,selectedHoles).map((h,i)=>({holeNum:i+1,par:h.par||4,si:h.si||i+1,dist:h.dist||0}));
+  const playersFull = players.map(p=>({...p,hcpIndex:parseFloat(p.hcpIndex),courseHcp:calcCHcp(parseFloat(p.hcpIndex),td.sr,td.cr,td.par)}));
+  const scores = {};
+  playersFull.forEach(p=>{scores[p.id]=holes.map(h=>({holeNum:h.holeNum,par:h.par,si:h.si,gross:0,fairway:null,gir:null,putts:null,bunker:false,sandSave:null,ob:0}));});
+  activeRound = {id:genId(),date,courseId:course.id,courseName:course.name,teeType:selectedTee,numHoles:selectedHoles,cr:td.cr,sr:td.sr,par:td.par,players:playersFull,scores};
+  localStorage.setItem('gf_ar_'+currentUser.id, JSON.stringify(activeRound));
+  activePlayerId = playersFull[0].id;
+  currentHoleIdx = 0;
+  $('round-setup-form').style.display='none';
+  $('hole-entry').style.display='block';
+  renderHoleEntry();
 }
 
 // ── HOLE ENTRY ──
-function HoleEntry({round,setRound,onSave,onDiscard}) {
-  const [holeIdx,setHoleIdx] = useState(()=>{ const i=(round.scores[round.players[0]?.id]||[]).findIndex(s=>!s.gross); return i>=0?i:0; });
-  const [activePid,setActivePid] = useState(round.players[0]?.id);
-  const [confirm,setConfirm] = useState(false);
+function renderHoleEntry() {
+  $('he-course-name').textContent = activeRound.courseName;
+  const players = activeRound.players;
 
-  const player = round.players.find(p=>p.id===activePid)||round.players[0];
-  const sc = round.scores[player.id]||[];
-  const hole = sc[holeIdx]||{};
-  const st = strokesOnHole(player.courseHcp, hole.si||holeIdx+1);
-  const totNet = round.players.map(p=>({name:p.name,pts:(round.scores[p.id]||[]).reduce((s,h)=>h.gross?s+sfNet(h.gross,h.par,strokesOnHole(p.courseHcp,h.si)):s,0)}));
+  // Player tabs
+  $('player-tabs').innerHTML = players.map(p=>{
+    const done=(activeRound.scores[p.id]||[]).filter(s=>s.gross).length;
+    return `<button class="tog${activePlayerId===p.id?' on':''}" onclick="setActivePlayer('${p.id}')">${p.name} <span style="font-size:10px;opacity:.7">${done}/${activeRound.numHoles}</span></button>`;
+  }).join('');
 
-  const upd = (f,v) => {
-    const s = {...round.scores};
-    s[player.id] = s[player.id].map((h,i)=>i===holeIdx?{...h,[f]:v}:h);
-    setRound({...round,scores:s});
-  };
+  // Hole nav
+  const sc = activeRound.scores[activePlayerId]||[];
+  $('hole-nav').innerHTML = sc.map((s,i)=>`
+    <button class="hole-btn${i===currentHoleIdx?' active':s.gross?' done':''}" onclick="goToHole(${i})">${i+1}</button>`).join('');
 
-  const scoreColor = g => !g?T.muted:g<=hole.par-2?T.accent:g===hole.par-1?"#a3e635":g===hole.par?T.text:g===hole.par+1?T.yellow:T.red;
-
-  return e("div",{style:{padding:"12px 16px 0"}},
-    e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
-      btn({background:T.faint,color:T.muted,padding:"6px 10px",border:`1px solid ${T.border}`,fontSize:11,borderRadius:8},()=>setConfirm(true),"💾 Speichern"),
-      e("div",{style:{textAlign:"center"}},
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:16,fontWeight:700}},round.courseName),
-        e("div",{style:{fontSize:10,color:T.muted}},e(TeeChip,{teeType:round.teeType}))
-      ),
-      btn({background:T.accent,color:"#000",padding:"6px 10px",fontSize:11,fontWeight:600,borderRadius:8},()=>setConfirm(true),"🏁 Fertig")
-    ),
-    confirm && e("div",{style:{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}},
-      e("div",{className:"card",style:{border:`1px solid ${T.border}`,padding:24,maxWidth:360,width:"100%"}},
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,marginBottom:8}},"Runde abschließen?"),
-        totNet.map(({name,pts})=>e("div",{key:name,style:{fontSize:14,padding:"6px 0",borderBottom:`1px solid ${T.faint}`,display:"flex",justifyContent:"space-between"}},
-          e("span",{},"👤 "+name),e("span",{style:{color:T.accent,fontWeight:600}},pts+" Pkt.")
-        )),
-        e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}},
-          btn({background:T.faint,color:T.text,padding:"12px",border:`1px solid ${T.border}`,borderRadius:10},()=>setConfirm(false),"Weiter"),
-          btn({background:T.accent,color:"#000",padding:"12px",fontWeight:600,borderRadius:10},()=>onSave(round),"✓ Speichern")
-        ),
-        btn({width:"100%",marginTop:8,background:"transparent",color:T.red,padding:"10px",border:`1px solid rgba(248,113,113,.3)`,borderRadius:10,fontSize:12},onDiscard,"🗑 Verwerfen")
-      )
-    ),
-    round.players.length>1 && e("div",{style:{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:4}},
-      round.players.map(p=>{
-        const done=(round.scores[p.id]||[]).filter(s=>s.gross).length;
-        return e("button",{key:p.id,className:"tg"+(activePid===p.id?" on":""),onClick:()=>setActivePid(p.id),style:{whiteSpace:"nowrap",flexShrink:0}},p.name+" ",e("span",{style:{fontSize:10,opacity:.7}},done+"/"+round.numHoles));
-      })
-    ),
-    e("div",{style:{display:"flex",gap:5,overflowX:"auto",paddingBottom:8,marginBottom:10}},
-      sc.map((s,i)=>btn({minWidth:34,height:34,background:i===holeIdx?T.accent:s.gross?T.faint:T.card,color:i===holeIdx?"#000":s.gross?T.text:T.muted,border:`1px solid ${i===holeIdx?T.accent:T.border}`,fontSize:11,fontWeight:600,borderRadius:7,flexShrink:0},()=>setHoleIdx(i),i+1))
-    ),
-    e("div",{className:"card",style:{marginBottom:10}},
-      e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
-        e("div",{},
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:30,fontWeight:700,lineHeight:1}},"Loch "+hole.holeNum),
-          e("div",{style:{fontSize:12,color:T.muted}},"Par "+hole.par+" · SI "+hole.si+" · "+hole.dist+"m"),
-          st!==0 && e("div",{style:{fontSize:11,marginTop:2,color:st>0?T.accent:T.red}},st>0?`+${st} Vorgabeschlag${st>1?"e":""}`:st+" Schlag abgeben")
-        ),
-        e("div",{style:{textAlign:"right"}},
-          e("div",{style:{fontSize:10,color:T.muted}},"Brutto / Netto"),
-          e("div",{style:{fontSize:20,fontWeight:700}},hole.gross?sfBrut(hole.gross,hole.par):"-"," ",e("span",{style:{color:T.accent}},hole.gross?sfNet(hole.gross,hole.par,st):"-")),
-          e("div",{style:{fontSize:10,color:T.muted}},"Platz-HCP "+player.courseHcp)
-        )
-      ),
-      e("div",{style:{marginBottom:12}},
-        e("div",{style:{fontSize:11,color:T.muted,marginBottom:6,fontWeight:600,letterSpacing:1}},"SCHLÄGE (BRUTTO)"),
-        e("div",{style:{display:"flex",gap:8,alignItems:"center"}},
-          btn({width:44,height:44,background:T.faint,color:T.text,fontSize:22,border:`1px solid ${T.border}`,borderRadius:10},()=>upd("gross",Math.max(1,(hole.gross||hole.par+2)-1)),"−"),
-          e("div",{style:{flex:1,textAlign:"center",fontFamily:"Georgia,serif",fontSize:46,fontWeight:700,lineHeight:1,color:scoreColor(hole.gross)}},hole.gross||"—"),
-          btn({width:44,height:44,background:T.faint,color:T.text,fontSize:22,border:`1px solid ${T.border}`,borderRadius:10},()=>upd("gross",(hole.gross||hole.par+1)+1),"+")
-        ),
-        hole.gross>0 && e("div",{style:{textAlign:"center",fontSize:11,color:T.muted,marginTop:2}},
-          hole.gross<hole.par?`-${hole.par-hole.gross}`:hole.gross===hole.par?"Par":`+${hole.gross-hole.par}`)
-      ),
-      e("div",{style:{display:"grid",gap:8}},
-        hole.par!==3 && e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"Fairway getroffen?"),
-          e("div",{style:{display:"flex",gap:6}},
-            e("button",{className:"tg"+(hole.fairway===true?" on":""),onClick:()=>upd("fairway",true)},"✓ Ja"),
-            e("button",{className:"tg"+(hole.fairway===false?" no":""),onClick:()=>upd("fairway",false)},"✗ Nein")
-          )
-        ),
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"GIR?"),
-          e("div",{style:{display:"flex",gap:6}},
-            e("button",{className:"tg"+(hole.gir===true?" on":""),onClick:()=>upd("gir",true)},"✓ Ja"),
-            e("button",{className:"tg"+(hole.gir===false?" no":""),onClick:()=>upd("gir",false)},"✗ Nein")
-          )
-        ),
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"Putts"),
-          e("div",{style:{display:"flex",gap:5}},
-            [0,1,2,3,4].map(n=>btn({width:36,height:36,background:hole.putts===n?(n>=3?T.red:n===1?T.accent:T.faint):T.card,color:hole.putts===n?"#000":T.muted,border:`1px solid ${hole.putts===n?T.accent:T.border}`,fontSize:13,fontWeight:600,borderRadius:7},()=>upd("putts",n),n))
-          )
-        ),
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"Bunker?"),
-          e("div",{style:{display:"flex",gap:6}},
-            e("button",{className:"tg"+(hole.bunker===true?" on":""),onClick:()=>upd("bunker",true)},"✓ Ja"),
-            e("button",{className:"tg"+(hole.bunker===false?" no":""),onClick:()=>upd("bunker",false)},"✗ Nein")
-          )
-        ),
-        hole.bunker && e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"Sand Save?"),
-          e("div",{style:{display:"flex",gap:6}},
-            e("button",{className:"tg"+(hole.sandSave===true?" on":""),onClick:()=>upd("sandSave",true)},"✓ Ja"),
-            e("button",{className:"tg"+(hole.sandSave===false?" no":""),onClick:()=>upd("sandSave",false)},"✗ Nein")
-          )
-        ),
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderTop:`1px solid ${T.faint}`}},
-          e("div",{style:{fontSize:12,color:T.muted}},"Penalty / OB"),
-          e("div",{style:{display:"flex",gap:5}},
-            [0,1,2,3].map(n=>btn({width:36,height:36,background:hole.ob===n?(n>0?T.red:T.faint):T.card,color:hole.ob===n?"#000":T.muted,border:`1px solid ${hole.ob===n?(n>0?T.red:T.accent):T.border}`,fontSize:13,fontWeight:600,borderRadius:7},()=>upd("ob",n),n))
-          )
-        )
-      )
-    ),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,paddingBottom:12}},
-      btn({background:T.faint,color:T.text,padding:"12px",border:`1px solid ${T.border}`,borderRadius:10,opacity:holeIdx===0?0.4:1},()=>setHoleIdx(Math.max(0,holeIdx-1)),"← Loch "+holeIdx),
-      btn({background:holeIdx<round.numHoles-1?T.accent:T.faint,color:holeIdx<round.numHoles-1?"#000":T.muted,padding:"12px",fontWeight:600,borderRadius:10,opacity:holeIdx===round.numHoles-1?0.4:1},()=>setHoleIdx(Math.min(round.numHoles-1,holeIdx+1)),"Loch "+(holeIdx+2)+" →")
-    )
-  );
+  renderHoleCard();
 }
 
-// ── ROUND SUMMARY ──
-function RoundSummary({round,setTab,onNew}) {
-  if (!round) return e("div",{style:{padding:24,color:T.muted}},"Keine Runde.");
-  const r = {...round, courseName:round.course_name||round.courseName, numHoles:round.num_holes||round.numHoles||18};
-  return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Runden-Auswertung",sub:new Date(r.date).toLocaleDateString("de-DE")+" · "+r.courseName}),
-    (r.players||[]).map(p=>{
-      const t = r.totals?.[p.id]||{};
-      return e("div",{key:p.id,className:"card",style:{marginBottom:14}},
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}},
-          e("div",{},
-            e("div",{style:{fontSize:16,fontWeight:600}},"👤 "+p.name),
-            e("div",{style:{fontSize:11,color:T.muted}},"HCP "+parseFloat(p.hcpIndex||0).toFixed(1)+" · Platz-HCP "+p.courseHcp)
-          ),
-          e("div",{style:{textAlign:"right"}},
-            e("div",{style:{fontSize:10,color:T.muted}},"Netto Stableford"),
-            e("div",{style:{fontFamily:"Georgia,serif",fontSize:34,fontWeight:700,color:T.accent,lineHeight:1}},t.nettoStableford||0),
-            e("div",{style:{fontSize:11,color:T.muted}},"Brutto: "+(t.bruttoScore||0))
-          )
-        ),
-        e("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",textAlign:"center",gap:8}},
-          [["GIR",`${t.gir||0}/${r.numHoles}`],["Fairways",t.fairways||0],["Putts",t.putts||0],["OB",t.ob||0]].map(([l,v])=>
-            e("div",{key:l},e("div",{style:{fontSize:17,fontWeight:600}},v),e("div",{style:{fontSize:10,color:T.muted}},l))
-          )
-        )
-      );
-    }),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}},
-      btn({background:T.faint,color:T.text,padding:"14px",border:`1px solid ${T.border}`,borderRadius:10},onNew,"Neue Runde"),
-      btn({background:T.accent,color:"#000",padding:"14px",fontWeight:600,borderRadius:10},()=>setTab("stats"),"📊 Analyse")
-    )
-  );
+function setActivePlayer(id) {
+  activePlayerId = id;
+  renderHoleEntry();
 }
 
-// ══════════════════════════════════════════
-// STATS VIEW
-// ══════════════════════════════════════════
-function StatsView({rounds}) {
-  const [sub,setSub] = useState("hcp");
+function goToHole(i) {
+  currentHoleIdx = i;
+  renderHoleEntry();
+}
 
-  const norm = rounds.map(r=>({
-    ...r, courseName:r.course_name||r.courseName||"",
-    teeType:r.tee_type||r.teeType||"yellow",
-    numHoles:r.num_holes||r.numHoles||18,
-    players:r.players||[], scores:r.scores||{}, totals:r.totals||{},
-    date:r.date||r.created_at,
-  }));
+function changeHole(d) {
+  const max = activeRound.numHoles - 1;
+  currentHoleIdx = Math.max(0, Math.min(max, currentHoleIdx + d));
+  renderHoleEntry();
+  $('prev-hole').textContent = '← Loch ' + currentHoleIdx;
+  $('next-hole').textContent = currentHoleIdx < max ? 'Loch '+(currentHoleIdx+2)+' →' : 'Fertig';
+}
 
-  if (!norm.length) return e("div",{style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Analyse",sub:"Noch keine Daten"}),
-    e("div",{style:{textAlign:"center",padding:60,color:T.muted}},e("div",{style:{fontSize:48}},"📊"),e("div",{style:{marginTop:12}},"Spiele mindestens eine Runde."))
-  );
+function renderHoleCard() {
+  const sc = activeRound.scores[activePlayerId]||[];
+  const hole = sc[currentHoleIdx]||{};
+  const player = activeRound.players.find(p=>p.id===activePlayerId);
+  const st = strokesOnHole(player.courseHcp, hole.si||currentHoleIdx+1);
+  const netPts = hole.gross ? sfNet(hole.gross,hole.par,st) : '—';
+  const brutPts = hole.gross ? sfBrut(hole.gross,hole.par) : '—';
+  const scoreColor = !hole.gross?'#6b9e7a':hole.gross<=hole.par-2?'#4ade80':hole.gross===hole.par-1?'#a3e635':hole.gross===hole.par?'#ecfdf5':hole.gross===hole.par+1?'#fbbf24':'#f87171';
 
-  const allSc = norm.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
-  const byPar = p => allSc.filter(h=>h.par===p);
-  const avgOver = arr => arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length - arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
-  const fwPct = () => { const a=allSc.filter(h=>h.par!==3&&h.fairway!==null); return a.length?Math.round(a.filter(h=>h.fairway).length/a.length*100):0; };
-  const girPct = () => { const a=allSc.filter(h=>h.gir!==null); return a.length?Math.round(a.filter(h=>h.gir).length/a.length*100):0; };
-  const avgPutts = allSc.filter(h=>h.putts!=null).reduce((s,h)=>s+h.putts,0) / (allSc.filter(h=>h.putts!=null).length||1);
+  $('hole-card').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+          <div style="font-size:30px;font-weight:700;line-height:1;">Loch ${hole.holeNum}</div>
+          <div class="muted">Par ${hole.par} · SI ${hole.si} · ${hole.dist||0}m</div>
+          ${st!==0?`<div style="font-size:11px;color:${st>0?'#4ade80':'#f87171'};margin-top:2px;">${st>0?'+'+st+' Vorgabeschlag'+(st>1?'e':''):st+' Schlag abgeben'}</div>`:''}
+        </div>
+        <div style="text-align:right;">
+          <div class="muted" style="font-size:10px;">Brutto / Netto</div>
+          <div style="font-size:20px;font-weight:700;">${brutPts} <span style="color:#4ade80;">${netPts}</span></div>
+          <div class="muted" style="font-size:10px;">Platz-HCP ${player.courseHcp}</div>
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:8px;">SCHLÄGE (BRUTTO)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-dark" style="width:44px;height:44px;font-size:22px;padding:0;" onclick="changeScore(-1)">−</button>
+          <div style="flex:1;text-align:center;font-size:48px;font-weight:700;color:${scoreColor};line-height:1;">${hole.gross||'—'}</div>
+          <button class="btn btn-dark" style="width:44px;height:44px;font-size:22px;padding:0;" onclick="changeScore(1)">+</button>
+        </div>
+        ${hole.gross?`<div class="muted" style="text-align:center;font-size:11px;margin-top:4px;">${hole.gross<hole.par?'-'+(hole.par-hole.gross):hole.gross===hole.par?'Par':'+'+(hole.gross-hole.par)}</div>`:''}
+      </div>
+      <div id="hole-stats">
+        ${hole.par!==3?`<div class="row"><span class="muted">Fairway getroffen?</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">✓ Ja</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">✗ Nein</button></div></div>`:''}
+        <div class="row"><span class="muted">GIR?</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">✓ Ja</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">✗ Nein</button></div></div>
+        <div class="row"><span class="muted">Putts</span><div style="display:flex;gap:5px;">${[0,1,2,3,4].map(n=>`<button class="hole-btn${hole.putts===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('putts',${n})">${n}</button>`).join('')}</div></div>
+        <div class="row"><span class="muted">Bunker?</span><div><button class="tog${hole.bunker===true?' on':''}" onclick="setHoleStat('bunker',true)">✓ Ja</button> <button class="tog${hole.bunker===false?' no':''}" onclick="setHoleStat('bunker',false)">✗ Nein</button></div></div>
+        ${hole.bunker?`<div class="row"><span class="muted">Sand Save?</span><div><button class="tog${hole.sandSave===true?' on':''}" onclick="setHoleStat('sandSave',true)">✓ Ja</button> <button class="tog${hole.sandSave===false?' no':''}" onclick="setHoleStat('sandSave',false)">✗ Nein</button></div></div>`:''}
+        <div class="row"><span class="muted">Penalty / OB</span><div style="display:flex;gap:5px;">${[0,1,2,3].map(n=>`<button class="hole-btn${hole.ob===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('ob',${n})">${n}</button>`).join('')}</div></div>
+      </div>
+    </div>`;
 
-  const hcpData = norm.map((r,i)=>{
-    const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-    return {name:`R${i+1}`, date:new Date(r.date).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}),
-      HCP:parseFloat(p?.hcpIndex||0), Netto:t.nettoStableford||0, Putts:t.putts||0};
+  const max = activeRound.numHoles - 1;
+  $('prev-hole').textContent = '← Loch ' + currentHoleIdx;
+  $('prev-hole').disabled = currentHoleIdx === 0;
+  $('next-hole').textContent = currentHoleIdx < max ? 'Loch '+(currentHoleIdx+2)+' →' : '🏁 Abschließen';
+}
+
+function changeScore(d) {
+  const sc = activeRound.scores[activePlayerId];
+  const h = sc[currentHoleIdx];
+  h.gross = Math.max(1, (h.gross||h.par+1)+d);
+  saveActiveRound();
+  renderHoleEntry();
+}
+
+function setHoleStat(field, val) {
+  const sc = activeRound.scores[activePlayerId];
+  sc[currentHoleIdx][field] = val;
+  saveActiveRound();
+  renderHoleCard();
+}
+
+function saveActiveRound() {
+  localStorage.setItem('gf_ar_'+currentUser.id, JSON.stringify(activeRound));
+}
+
+async function saveRound() {
+  if (!confirm('Runde speichern und abschließen?')) return;
+  const totals = {};
+  activeRound.players.forEach(p => {
+    const sc = activeRound.scores[p.id]||[];
+    totals[p.id] = {
+      bruttoScore:sc.reduce((s,h)=>s+(h.gross||0),0),
+      nettoStableford:sc.reduce((s,h)=>s+sfNet(h.gross,h.par,strokesOnHole(p.courseHcp,h.si)),0),
+      bruttoStableford:sc.reduce((s,h)=>s+sfBrut(h.gross,h.par),0),
+      gir:sc.filter(h=>h.gir).length, fairways:sc.filter(h=>h.fairway&&h.par!==3).length,
+      putts:sc.reduce((s,h)=>s+(h.putts||0),0), ob:sc.reduce((s,h)=>s+(h.ob||0),0)
+    };
   });
-
-  const radarData = [
-    {subject:"Driving",A:fwPct(),fullMark:100},{subject:"GIR",A:girPct(),fullMark:100},
-    {subject:"Putten",A:Math.max(0,100-(avgPutts-1.6)*50),fullMark:100},
-    {subject:"Par 3",A:Math.max(0,100-avgOver(byPar(3))*30),fullMark:100},
-    {subject:"Par 5",A:Math.max(0,100-avgOver(byPar(5))*20),fullMark:100},
-  ];
-
-  const tips = [];
-  if (fwPct()<50) tips.push("🏌️ Driving: Fairway-Quote unter 50% → Ausrichtung & Schwungtempo üben");
-  if (girPct()<40) tips.push("🎯 Approach: GIR unter 40% → Annäherungen mit 7–9-Eisen verbessern");
-  if (avgPutts>2.1) tips.push("🟢 Putten: Über 2.1 Putts/Loch → kurze Putts (1–2m) trainieren");
-  if (avgOver(byPar(3))>1) tips.push("⛳ Par 3: Starke Verluste → kurzes Eisen und Präzision üben");
-
-  const statRows = [
-    [`Fairway — ${fwPct()}%`, fwPct()>=60?T.accent:fwPct()>=45?T.yellow:T.red, "Ziel: ≥ 60%"],
-    [`GIR — ${girPct()}%`, girPct()>=50?T.accent:girPct()>=35?T.yellow:T.red, "Ziel: ≥ 50%"],
-    [`Ø Putts — ${isNaN(avgPutts)?"—":avgPutts.toFixed(2)}/Loch`, avgPutts<=2?T.accent:avgPutts<=2.2?T.yellow:T.red, "Ziel: ≤ 2.0"],
-    [`Par 3 ⌀ — +${avgOver(byPar(3)).toFixed(2)}`, avgOver(byPar(3))<=0.8?T.accent:avgOver(byPar(3))<=1.3?T.yellow:T.red, "Ziel: < 1.0"],
-    [`Par 5 ⌀ — +${avgOver(byPar(5)).toFixed(2)}`, avgOver(byPar(5))<=0.5?T.accent:avgOver(byPar(5))<=1.0?T.yellow:T.red, "Ziel: < 0.5"],
-  ];
-
-  return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"Analyse",sub:norm.length+" Runden"}),
-    e("div",{style:{display:"flex",gap:8,marginBottom:18,overflowX:"auto",paddingBottom:4}},
-      [["hcp","📈 Verlauf"],["radar","🎯 Radar"],["tips","💡 Tipps"],["sim","🧮 HCP-Sim"]].map(([k,l])=>
-        e("button",{key:k,className:"tg"+(sub===k?" on":""),onClick:()=>setSub(k),style:{whiteSpace:"nowrap"}},l)
-      )
-    ),
-    sub==="hcp" && e("div",{style:{display:"grid",gap:14}},
-      e("div",{className:"card"},
-        e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:12}},"HCP & Netto Stableford"),
-        e(SimpleLineChart,{data:hcpData,lines:[{key:"HCP",label:"HCP Index",color:T.yellow},{key:"Netto",label:"Netto Stableford",color:T.accent}],height:180})
-      ),
-      e("div",{className:"card"},
-        e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:8}},"Putts pro Runde"),
-        e(SimpleBarChart,{data:hcpData,barKey:"Putts",color:T.blue,height:130}),
-        e("div",{style:{fontSize:11,color:T.muted,textAlign:"center",marginTop:6}},"Ziel: ≤ 30 Putts / 18 Löcher")
-      ),
-      e("div",{className:"card"},
-        e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:10}},"Key Stats"),
-        statRows.map(([l,c,z],i)=>e("div",{key:i,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.faint}`}},
-          e("div",{},e("div",{style:{fontSize:13,color:c,fontWeight:600}},l),e("div",{style:{fontSize:10,color:T.muted}},z))
-        ))
-      )
-    ),
-    sub==="radar" && e("div",{className:"card"},
-      e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:8}},"Performance-Radar"),
-      e("div",{style:{display:"flex",justifyContent:"center"}},e(SimpleRadar,{data:radarData,height:220}))
-    ),
-    sub==="sim" && e(HcpSimulator,{rounds:norm}),
-    sub==="tips" && e("div",{style:{display:"grid",gap:10}},
-      tips.length===0 && e("div",{className:"card",style:{color:T.accent,textAlign:"center",padding:30}},"🏆 Alles im grünen Bereich!"),
-      tips.map((t,i)=>e("div",{key:i,className:"card",style:{borderColor:T.yellow+"44"}},e("div",{style:{fontSize:13,color:T.text,lineHeight:1.6}},t))),
-      e("div",{className:"card"},
-        e("div",{style:{fontSize:12,color:T.gold,fontWeight:600,marginBottom:10}},"📌 Allgemeine Empfehlungen"),
-        ["Mindestens 1× pro Woche 30 Min. Putting","Driving Range: 60% Eisen, 40% Holz","Vor Runden 15 Min. warm spielen","HCP-relevante Runden immer einreichen"].map((t,i)=>
-          e("div",{key:i,style:{fontSize:12,color:T.muted,padding:"5px 0",borderBottom:`1px solid ${T.faint}`,display:"flex",gap:8}},e("span",{style:{color:T.accent}},"✓"),t)
-        )
-      )
-    )
-  );
+  activeRound.totals = totals;
+  await sb.from('rounds').insert({user_id:currentUser.id,date:activeRound.date,course_id:activeRound.courseId,course_name:activeRound.courseName,tee_type:activeRound.teeType,num_holes:activeRound.numHoles,cr:activeRound.cr,sr:activeRound.sr,par:activeRound.par,players:activeRound.players,scores:activeRound.scores,totals});
+  rounds = await sb.from('rounds').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).then(r=>r.data||[]);
+  localStorage.removeItem('gf_ar_'+currentUser.id);
+  activeRound = null;
+  alert('✅ Runde gespeichert!');
+  showPage('pg-home');
 }
 
-
-// ══════════════════════════════════════════
-// HCP SIMULATOR
-// ══════════════════════════════════════════
-function HcpSimulator({rounds}) {
-  // WHS: Score Differential = (Gross - CR) * 113 / SR
-  // HCP Index = avg of best 8 from last 20 differentials * 0.96
-  const calcDiff = r => {
-    const p = r.players?.[0];
-    const t = r.totals?.[p?.id]||{};
-    const gross = t.bruttoScore;
-    if (!gross || !r.cr || !r.sr) return null;
-    return parseFloat(((gross - r.cr) * 113 / r.sr).toFixed(1));
-  };
-
-  const [selected, setSelected] = useState(rounds.map(r=>r.id));
-
-  const toggle = id => setSelected(sel=>sel.includes(id)?sel.filter(x=>x!==id):[...sel,id]);
-  const selectAll = () => setSelected(rounds.map(r=>r.id));
-  const clearAll = () => setSelected([]);
-
-  // Compute current HCP from all rounds
-  const allDiffs = rounds.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
-  const selDiffs = allDiffs.filter(r=>selected.includes(r.id)).map(r=>r.diff).sort((a,b)=>a-b);
-  const best8 = selDiffs.slice(0,Math.min(8,selDiffs.length));
-  const simHcp = best8.length ? parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length*0.96).toFixed(1)) : null;
-
-  // Current HCP from last rounds
-  const curDiffs = allDiffs.slice(0,20).map(r=>r.diff).sort((a,b)=>a-b);
-  const curBest8 = curDiffs.slice(0,Math.min(8,curDiffs.length));
-  const curHcp = curBest8.length ? parseFloat((curBest8.reduce((a,b)=>a+b,0)/curBest8.length*0.96).toFixed(1)) : null;
-
-  const delta = (simHcp!==null && curHcp!==null) ? parseFloat((simHcp-curHcp).toFixed(1)) : null;
-
-  if (!rounds.length) return e("div",{className:"card",style:{textAlign:"center",padding:30,color:T.muted}},"Noch keine Runden vorhanden.");
-
-  return e("div",{style:{display:"grid",gap:14}},
-    // Result card
-    e("div",{className:"card",style:{background:`linear-gradient(135deg,${T.accentDim}22,${T.card})`}},
-      e("div",{style:{fontSize:12,color:T.accent,fontWeight:600,marginBottom:12}},"🧮 HCP Simulation (WHS-Formel)"),
-      e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",textAlign:"center",gap:12}},
-        e("div",{},
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:T.muted}},curHcp!==null?curHcp.toFixed(1):"—"),
-          e("div",{style:{fontSize:11,color:T.muted,marginTop:2}},"Aktuell")
-        ),
-        e("div",{style:{display:"flex",alignItems:"center",justifyContent:"center"}},
-          e("div",{style:{fontSize:28,color:T.faint}},"→")
-        ),
-        e("div",{},
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,fontWeight:700,color:simHcp!==null?(delta<0?T.accent:delta>0?T.red:T.text):T.muted}},simHcp!==null?simHcp.toFixed(1):"—"),
-          e("div",{style:{fontSize:11,color:T.muted,marginTop:2}},"Simuliert")
-        )
-      ),
-      delta!==null && e("div",{style:{textAlign:"center",marginTop:12,fontSize:13,color:delta<0?T.accent:delta>0?T.red:T.muted,fontWeight:600}},
-        delta<0 ? `▼ ${Math.abs(delta)} Verbesserung` : delta>0 ? `▲ ${delta} Verschlechterung` : "Keine Änderung"
-      ),
-      e("div",{style:{fontSize:11,color:T.muted,textAlign:"center",marginTop:8}},
-        `Beste ${best8.length} von ${selDiffs.length} ausgewählten Runden · × 0.96`
-      )
-    ),
-    // Controls
-    e("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}},
-      e("button",{className:"tg",onClick:selectAll},"Alle auswählen"),
-      e("button",{className:"tg",onClick:clearAll},"Alle abwählen")
-    ),
-    // Round list
-    e("div",{style:{display:"grid",gap:8}},
-      allDiffs.length===0 && e("div",{className:"card",style:{color:T.muted,textAlign:"center",padding:20,fontSize:13}},
-        "Keine auswertbaren Runden (Brutto-Score, CR und SR werden benötigt)."
-      ),
-      allDiffs.map(r=>{
-        const sel = selected.includes(r.id);
-        const p = r.players?.[0]; const t = r.totals?.[p?.id]||{};
-        const isBest = sel && selDiffs.indexOf(r.diff) < 8;
-        return e("div",{key:r.id,onClick:()=>toggle(r.id),
-          style:{background:sel?T.accentGlow:T.card,border:`1px solid ${sel?T.accent:T.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,transition:"all .18s"}},
-          e("div",{style:{width:28,height:28,borderRadius:"50%",background:sel?T.accent:T.faint,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}},sel?"✓":"○"),
-          e("div",{style:{flex:1}},
-            e("div",{style:{fontSize:13,fontWeight:600,color:sel?T.accent:T.text}},r.courseName||r.course_name),
-            e("div",{style:{fontSize:11,color:T.muted}},new Date(r.date).toLocaleDateString("de-DE")+" · Brutto "+t.bruttoScore),
-            e("div",{style:{fontSize:11,color:T.muted}},"CR "+r.cr+" / SR "+r.sr)
-          ),
-          e("div",{style:{textAlign:"right",flexShrink:0}},
-            e("div",{style:{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:isBest?T.accent:sel?T.muted:T.faint}},r.diff>0?"+"+r.diff:r.diff),
-            e("div",{style:{fontSize:9,color:T.muted}},"Diff."),
-            isBest && e("div",{style:{fontSize:9,color:T.accent,marginTop:2}},"★ top 8")
-          )
-        );
-      })
-    ),
-    e("div",{className:"card",style:{borderColor:T.faint}},
-      e("div",{style:{fontSize:11,color:T.muted,lineHeight:1.6}},
-        "ℹ️ WHS-Formel: Score Differential = (Brutto − CR) × 113 ÷ SR
-",
-        "HCP Index = Ø der besten 8 Differentials × 0.96
-",
-        "Nur Runden mit eingetragenen Brutto-Scores werden berücksichtigt."
-      )
-    )
-  );
+// ── STATS ──
+function showStat(id, btn) {
+  ['verlauf','radar','tips','sim'].forEach(s=>{ $('stat-'+s).style.display='none'; });
+  $('stat-'+id).style.display='block';
+  document.querySelectorAll('#pg-stats .tog').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  renderStatSection(id);
 }
 
-// ══════════════════════════════════════════
-// ADMIN VIEW
-// ══════════════════════════════════════════
-function AdminView() {
-  const [users,setUsers] = useState([]);
-  const [allRounds,setAllRounds] = useState([]);
-  const [selUser,setSelUser] = useState(null);
-  const [userRounds,setUserRounds] = useState([]);
-  const [loading,setLoading] = useState(true);
-  const [sub,setSub] = useState("users");
+function renderStats() { renderStatSection('verlauf'); }
 
-  useEffect(()=>{(async()=>{
-    const [u,r] = await Promise.all([DB.getAllProfiles(), DB.getAllRounds()]);
-    setUsers(u); setAllRounds(r); setLoading(false);
-  })();},[]);
+function renderStatSection(id) {
+  const norm = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
+  const allSc = norm.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
+  if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">Noch keine Runden.</p></div>'; return; }
 
-  const openUser = async u => {
-    setSelUser(u);
-    const r = await DB.getAllRounds();
-    setUserRounds(r.filter(x=>x.user_id===u.id));
-  };
+  if (id==='verlauf') {
+    const rows = norm.map((r,i)=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return{name:'R'+(i+1),date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),HCP:parseFloat(p?.hcpIndex||0),Netto:t.nettoStableford||0,Putts:t.putts||0};});
+    const byPar=p=>allSc.filter(h=>h.par===p);
+    const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
+    const fwA=allSc.filter(h=>h.par!==3&&h.fairway!==null);const fwPct=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):0;
+    const girA=allSc.filter(h=>h.gir!==null);const girPct=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):0;
+    const puttA=allSc.filter(h=>h.putts!=null);const avgPutts=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:0;
+    $('stat-verlauf').innerHTML = `
+      <div class="card">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
+        ${[['Fairway %',''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','Ziel: ≥ 60%'],
+           ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','Ziel: ≥ 50%'],
+           ['Ø Putts/Loch',avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','Ziel: ≤ 2.0'],
+           ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','Ziel: < 1.0'],
+           ['Par 5 ⌀','+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','Ziel: < 0.5'],
+        ].map(([l,v,c,z])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">${z}</div></div></div>`).join('')}
+      </div>
+      <div class="card" style="margin-top:10px;">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Runden Verlauf</div>
+        ${rows.map(r=>`<div class="row"><span>${r.date}</span><span style="color:#4ade80;font-weight:600;">${r.Netto} Pkt.</span><span class="muted" style="font-size:11px;">HCP ${r.HCP.toFixed(1)}</span></div>`).join('')}
+      </div>`;
+  }
 
-  if (loading) return e(Spinner);
+  if (id==='radar') {
+    const byPar=p=>allSc.filter(h=>h.par===p);
+    const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
+    const fwA=allSc.filter(h=>h.par!==3&&h.fairway!==null);const fw=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):0;
+    const girA=allSc.filter(h=>h.gir!==null);const gir=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):0;
+    const puttA=allSc.filter(h=>h.putts!=null);const ap=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:2;
+    const data=[
+      {label:'Driving',val:fw},{label:'GIR',val:gir},
+      {label:'Putten',val:Math.max(0,100-(ap-1.6)*50)},
+      {label:'Par 3',val:Math.max(0,100-avgOver(byPar(3))*30)},
+      {label:'Par 5',val:Math.max(0,100-avgOver(byPar(5))*20)},
+    ];
+    const W=280,H=240,CX=W/2,CY=H/2-10,R=80;
+    const n=data.length;
+    const ang=i=>((i/n)*2*Math.PI)-Math.PI/2;
+    const pt=(i,r)=>[CX+r*Math.cos(ang(i)),CY+r*Math.sin(ang(i))];
+    const gridPoly=r=>data.map((_,i)=>pt(i,r).join(',')).join(' ');
+    $('stat-radar').innerHTML = `<div class="card"><div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Performance-Radar</div>
+      <div style="display:flex;justify-content:center;">
+        <svg width="280" height="240" viewBox="0 0 ${W} ${H}">
+          ${[0.25,0.5,0.75,1].map(g=>`<polygon points="${gridPoly(R*g)}" fill="none" stroke="#2d4d38" stroke-width="1"/>`).join('')}
+          ${data.map((_,i)=>{const[x,y]=pt(i,R);return`<line x1="${CX}" y1="${CY}" x2="${x}" y2="${y}" stroke="#2d4d38"/>`;}).join('')}
+          <polygon points="${data.map((d,i)=>pt(i,R*d.val/100).join(',')).join(' ')}" fill="#4ade80" fill-opacity=".25" stroke="#4ade80" stroke-width="2"/>
+          ${data.map((d,i)=>{const[x,y]=pt(i,R+20);return`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" fill="#6b9e7a" font-size="11">${d.label}</text>`;}).join('')}
+        </svg>
+      </div></div>`;
+  }
 
-  const stats = uid => {
-    const r = allRounds.filter(x=>x.user_id===uid);
-    const nets = r.map(x=>x.totals?.[x.players?.[0]?.id]?.nettoStableford||0);
-    return {rounds:r.length, avg:nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1):"—", best:nets.length?Math.max(...nets):"—", last:r[0]?.date||null};
-  };
+  if (id==='tips') {
+    const byPar=p=>allSc.filter(h=>h.par===p);
+    const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
+    const fwA=allSc.filter(h=>h.par!==3&&h.fairway!==null);const fw=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):0;
+    const girA=allSc.filter(h=>h.gir!==null);const gir=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):0;
+    const puttA=allSc.filter(h=>h.putts!=null);const ap=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:2;
+    const tips=[];
+    if(fw<50) tips.push('🏌️ <b>Driving:</b> Fairway-Quote unter 50% → Ausrichtung & Schwungtempo auf der Range üben');
+    if(gir<40) tips.push('🎯 <b>Approach:</b> GIR unter 40% → Annäherungen mit 7–9-Eisen trainieren');
+    if(ap>2.1)  tips.push('🟢 <b>Putten:</b> Über 2.1 Putts/Loch → kurze Putts (1–2m) auf dem Grün üben');
+    if(avgOver(byPar(3))>1) tips.push('⛳ <b>Par 3:</b> Starke Verluste → Präzision mit kurzen Eisen verbessern');
+    if(avgOver(byPar(5))>1) tips.push('🦅 <b>Par 5:</b> Verluste auf langen Löchern → Lagewahl und 3. Schlag verbessern');
+    $('stat-tips').innerHTML = `
+      ${tips.length?tips.map(t=>`<div class="card" style="margin-bottom:8px;border-color:#fbbf2444;"><div style="font-size:13px;line-height:1.6;">${t}</div></div>`).join(''):'<div class="card" style="text-align:center;padding:24px;color:#4ade80;">🏆 Alles im grünen Bereich!</div>'}
+      <div class="card" style="margin-top:8px;">
+        <div style="font-size:12px;color:#fde68a;font-weight:600;margin-bottom:8px;">📌 Allgemeine Empfehlungen</div>
+        ${['1× pro Woche 30 Min. Putting-Training','Driving Range: 60% Eisen, 40% Holz','Vor Runden 15 Min. warm spielen','HCP-relevante Runden einreichen'].map(t=>`<div class="row"><span style="color:#4ade80;margin-right:8px;">✓</span><span class="muted">${t}</span></div>`).join('')}
+      </div>`;
+  }
 
-  const globalNets = allRounds.flatMap(r=>r.players?.map(p=>r.totals?.[p.id]?.nettoStableford||0)||[]);
-  const globalAvg = globalNets.length?(globalNets.reduce((a,b)=>a+b,0)/globalNets.length).toFixed(1):"—";
-
-  if (selUser) return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:20}},
-      btn({background:T.faint,color:T.muted,padding:"8px 14px",border:`1px solid ${T.border}`,borderRadius:8,fontSize:12},()=>setSelUser(null),"← Zurück"),
-      e("div",{},
-        e("div",{style:{fontFamily:"Georgia,serif",fontSize:20,fontWeight:700}},"👤 "+selUser.display_name),
-        e("div",{style:{fontSize:12,color:T.muted}},"HCP "+selUser.hcp_index+" · "+userRounds.length+" Runden")
-      )
-    ),
-    userRounds.length===0 && e("div",{style:{textAlign:"center",padding:40,color:T.muted}},"Noch keine Runden."),
-    userRounds.map(r=>{
+  if (id==='sim') {
+    const calcDiff = r => {
       const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-      return e("div",{key:r.id,className:"card",style:{marginBottom:10}},
-        e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-          e("div",{},
-            e("div",{style:{fontSize:14,fontWeight:600}},r.course_name),
-            e("div",{style:{fontSize:11,color:T.muted}},new Date(r.date).toLocaleDateString("de-DE")+" · "+(r.num_holes||18)+"L"),
-            e("div",{style:{fontSize:11,color:T.muted}},"GIR:"+(t.gir||0)+" FW:"+(t.fairways||0)+" Putts:"+(t.putts||0))
-          ),
-          e("div",{style:{textAlign:"right"}},
-            e("div",{style:{fontFamily:"Georgia,serif",fontSize:28,color:T.accent,fontWeight:700,lineHeight:1}},t.nettoStableford||0),
-            e("div",{style:{fontSize:10,color:T.muted}},"Brutto: "+(t.bruttoScore||0))
-          )
-        )
-      );
-    })
-  );
-
-  return e("div",{className:"fade",style:{padding:"24px 16px"}},
-    e(Hdr,{title:"🛡️ Admin",sub:"Gesamtübersicht"}),
-    e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:20}},
-      [["Spieler",users.length],["Runden",allRounds.length],["⌀ Netto",globalAvg],["Aktiv",users.filter(u=>allRounds.some(r=>r.user_id===u.id)).length]].map(([l,v])=>
-        e("div",{key:l,className:"card",style:{textAlign:"center",padding:"12px 6px"}},
-          e("div",{style:{fontFamily:"Georgia,serif",fontSize:22,fontWeight:700,color:T.accent}},v),
-          e("div",{style:{fontSize:9,color:T.muted,marginTop:2}},l)
-        )
-      )
-    ),
-    e("div",{style:{display:"flex",gap:8,marginBottom:16}},
-      [["users","👥 Spieler"],["rounds","📋 Alle Runden"]].map(([k,l])=>
-        e("button",{key:k,className:"tg"+(sub===k?" on":""),onClick:()=>setSub(k),style:{flex:1,padding:"10px",fontWeight:600}},l)
-      )
-    ),
-    sub==="users" && e("div",{style:{display:"grid",gap:10}},
-      users.map(u=>{
-        const s = stats(u.id);
-        return e("div",{key:u.id,className:"card",style:{cursor:"pointer"},onClick:()=>openUser(u)},
-          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-            e("div",{style:{display:"flex",alignItems:"center",gap:12}},
-              e("div",{style:{width:40,height:40,borderRadius:"50%",background:T.faint,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}},u.is_admin?"🛡️":"👤"),
-              e("div",{},
-                e("div",{style:{fontSize:15,fontWeight:600}},u.display_name," ",u.is_admin&&e("span",{style:{fontSize:10,color:T.accent,background:T.accentGlow,border:`1px solid ${T.accent}`,borderRadius:4,padding:"1px 5px"}},"Admin")),
-                e("div",{style:{fontSize:11,color:T.muted}},"HCP "+u.hcp_index+" · "+s.rounds+" Runden"),
-                s.last && e("div",{style:{fontSize:10,color:T.muted}},"Zuletzt: "+new Date(s.last).toLocaleDateString("de-DE"))
-              )
-            ),
-            e("div",{style:{textAlign:"right"}},
-              e("div",{style:{fontSize:10,color:T.muted}},"⌀ Netto"),
-              e("div",{style:{fontFamily:"Georgia,serif",fontSize:24,color:T.accent,fontWeight:700}},s.avg),
-              e("div",{style:{fontSize:10,color:T.muted}},"Beste: "+s.best)
-            )
-          )
-        );
-      })
-    ),
-    sub==="rounds" && e("div",{style:{display:"grid",gap:8}},
-      allRounds.slice(0,30).map(r=>{
-        const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-        const u=users.find(x=>x.id===r.user_id);
-        return e("div",{key:r.id,className:"card"},
-          e("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-            e("div",{},
-              e("div",{style:{fontSize:13,fontWeight:600}},r.course_name),
-              e("div",{style:{fontSize:11,color:T.accent}},"👤 "+(u?.display_name||"?")),
-              e("div",{style:{fontSize:11,color:T.muted}},new Date(r.date).toLocaleDateString("de-DE")+" · "+(r.num_holes||18)+"L")
-            ),
-            e("div",{style:{textAlign:"right"}},
-              e("div",{style:{fontFamily:"Georgia,serif",fontSize:26,color:T.accent,fontWeight:700,lineHeight:1}},t.nettoStableford||0),
-              e("div",{style:{fontSize:10,color:T.muted}},"Brutto: "+(t.bruttoScore||0))
-            )
-          )
-        );
-      }),
-      allRounds.length>30 && e("div",{style:{textAlign:"center",fontSize:12,color:T.muted,padding:8}},"... und "+(allRounds.length-30)+" weitere Runden")
-    )
-  );
-}
-
-// ══════════════════════════════════════════
-// RENDER
-// ══════════════════════════════════════════
-function startApp() {
-  const container = document.getElementById("root");
-  if (!container) { setTimeout(startApp, 50); return; }
-  try {
-    const root = ReactDOM.createRoot(container);
-    root.render(React.createElement(App));
-  } catch(ex) {
-    container.innerHTML = '<div style="padding:30px;color:#f87171;background:#060e08;min-height:100vh">' +
-      '<div style="font-size:40px">⛳</div><p>Start-Fehler: '+ex.message+'</p></div>';
+      if(!t.bruttoScore||!r.cr||!r.sr) return null;
+      return parseFloat(((t.bruttoScore-r.cr)*113/r.sr).toFixed(1));
+    };
+    const withDiff = norm.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
+    if(!withDiff.length){$('stat-sim').innerHTML='<div class="card muted" style="text-align:center;padding:20px;">Keine auswertbaren Runden (Brutto-Score benötigt).</div>';return;}
+    const allDiffs = withDiff.map(r=>r.diff).sort((a,b)=>a-b);
+    const best8 = allDiffs.slice(0,Math.min(8,allDiffs.length));
+    const curHcp = best8.length ? parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length*0.96).toFixed(1)) : null;
+    $('stat-sim').innerHTML = `
+      <div class="card" style="margin-bottom:10px;">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:12px;">🧮 WHS HCP Simulation</div>
+        <div class="grid3" style="text-align:center;margin-bottom:10px;">
+          <div class="stat-box"><div class="big-num">${parseFloat(currentProfile?.hcp_index||18).toFixed(1)}</div><div class="muted" style="font-size:10px;">Aktuell</div></div>
+          <div class="stat-box" style="display:flex;align-items:center;justify-content:center;"><div style="font-size:24px;color:#2d4d38;">→</div></div>
+          <div class="stat-box"><div class="big-num">${curHcp!==null?curHcp.toFixed(1):'—'}</div><div class="muted" style="font-size:10px;">Berechnet</div></div>
+        </div>
+        <div class="muted" style="font-size:11px;text-align:center;">Beste ${best8.length} von ${withDiff.length} Runden · × 0.96</div>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Score Differentials</div>
+        ${withDiff.map((r,i)=>{const t=r.totals?.[r.players?.[0]?.id]||{};const isBest=allDiffs.indexOf(r.diff)<8;return`<div class="row"><div><div style="font-size:13px;font-weight:600;">${r.courseName}</div><div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · Brutto ${t.bruttoScore}</div></div><div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:${isBest?'#4ade80':'#6b9e7a'};">${r.diff>0?'+'+r.diff:r.diff}</div>${isBest?'<div style="font-size:9px;color:#4ade80;">★ top 8</div>':''}</div></div>`;}).join('')}
+      </div>`;
   }
 }
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  startApp();
+
+// ── ADMIN ──
+async function renderAdmin() {
+  $('admin-content').innerHTML = '<div style="text-align:center;padding:20px;" class="muted"><span class="spin">⛳</span> Lade…</div>';
+  const [users,allRounds] = await Promise.all([
+    sb.from('profiles').select('*').order('display_name').then(r=>r.data||[]),
+    sb.from('rounds').select('*').order('date',{ascending:false}).then(r=>r.data||[])
+  ]);
+  const nets = allRounds.flatMap(r=>r.players?.map(p=>r.totals?.[p.id]?.nettoStableford||0)||[]);
+  const avg = nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1):'—';
+  $('admin-content').innerHTML = `
+    <div class="grid3" style="margin-bottom:16px;">
+      <div class="stat-box"><div class="big-num">${users.length}</div><div class="muted" style="font-size:10px;">Spieler</div></div>
+      <div class="stat-box"><div class="big-num">${allRounds.length}</div><div class="muted" style="font-size:10px;">Runden</div></div>
+      <div class="stat-box"><div class="big-num">${avg}</div><div class="muted" style="font-size:10px;">⌀ Netto</div></div>
+    </div>
+    <h3 style="margin-bottom:10px;">Alle Spieler</h3>
+    ${users.map(u=>{
+      const r=allRounds.filter(x=>x.user_id===u.id);
+      const nets=r.map(x=>x.totals?.[x.players?.[0]?.id]?.nettoStableford||0);
+      const uavg=nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1):'—';
+      return`<div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:600;">${u.is_admin?'🛡️ ':' 👤 '}${u.display_name}</div>
+            <div class="muted" style="font-size:11px;">HCP ${parseFloat(u.hcp_index||18).toFixed(1)} · ${r.length} Runden</div>
+          </div>
+          <div style="text-align:right;"><div class="big-num" style="font-size:22px;">${uavg}</div><div class="muted" style="font-size:10px;">⌀ Netto</div></div>
+        </div>
+      </div>`;
+    }).join('')}
+    <h3 style="margin:16px 0 10px;">Letzte Runden</h3>
+    ${allRounds.slice(0,20).map(r=>{
+      const p=r.players?.[0];const t=r.totals?.[p?.id]||{};const u=users.find(x=>x.id===r.user_id);
+      return`<div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><div style="font-weight:600;font-size:13px;">${r.course_name}</div><div class="muted" style="font-size:11px;">👤 ${u?.display_name||'?'} · ${new Date(r.date).toLocaleDateString('de-DE')}</div></div>
+          <div style="text-align:right;"><div class="big-num" style="font-size:24px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:10px;">Netto</div></div>
+        </div>
+      </div>`;
+    }).join('')}`;
 }
 </script>
 </body>
