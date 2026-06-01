@@ -10,9 +10,9 @@
   <link rel="manifest" href="manifest.json"/>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="https://unpkg.com/recharts/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;}
     html,body,#root{margin:0;padding:0;height:100%;background:#060e08;}
@@ -44,10 +44,36 @@ const SUPABASE_URL  = "https://dcpijdxzwbseoirhizki.supabase.co/rest/v1/";
 const SUPABASE_KEY  = "sb_publishable_yiGYBc9S63g3Nmrxl2vBcw_z65-GUSF";
 // ═══════════════════════════════════════════════
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Support both old (eyJ) and new (sb_publishable_) Supabase key formats
+let sb;
+try {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
+} catch(e) {
+  console.error("Supabase init error:", e);
+}
 const {useState,useEffect,useRef} = React;
-const {LineChart,Line,BarChart,Bar,XAxis,YAxis,CartesianGrid,Tooltip,
-       ResponsiveContainer,Legend,RadarChart,Radar,PolarGrid,PolarAngleAxis} = Recharts;
+// Safe Recharts import
+const RC = typeof Recharts !== 'undefined' ? Recharts : {};
+const LineChart = RC.LineChart || (()=>null);
+const Line = RC.Line || (()=>null);
+const BarChart = RC.BarChart || (()=>null);
+const Bar = RC.Bar || (()=>null);
+const XAxis = RC.XAxis || (()=>null);
+const YAxis = RC.YAxis || (()=>null);
+const CartesianGrid = RC.CartesianGrid || (()=>null);
+const Tooltip = RC.Tooltip || (()=>null);
+const ResponsiveContainer = RC.ResponsiveContainer || (({children})=>React.createElement('div',{style:{width:'100%',height:200}},children));
+const Legend = RC.Legend || (()=>null);
+const RadarChart = RC.RadarChart || (()=>null);
+const Radar = RC.Radar || (()=>null);
+const PolarGrid = RC.PolarGrid || (()=>null);
+const PolarAngleAxis = RC.PolarAngleAxis || (()=>null);
 
 // ── Theme ──
 const T={bg:"#060e08",card:"#0b1e10",border:"#173320",accent:"#4ade80",
@@ -203,7 +229,10 @@ function App(){
   const updSavedPlayers=sp=>setSavedPlayers(sp);
   const updCourses=c=>setCourses(c);
 
-  if(loading)return<div style={{height:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}}>⛳</span></div>;
+  if(loading)return<div style={{height:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:20}}>
+    <span style={{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}}>⛳</span>
+    <span style={{fontSize:13,color:T.muted,textAlign:"center"}}>Verbinde mit Datenbank…</span>
+  </div>;
   if(!user)return<AuthScreen onLogin={u=>initUser(u)}/>;
 
   return(
