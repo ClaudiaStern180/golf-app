@@ -261,15 +261,19 @@ function App() {
 
   useEffect(()=>{
     if (!sb) { setLoading(false); return; }
-    const to = setTimeout(()=>setLoading(false), 6000);
-    sb.auth.getSession().then(({data:{session}})=>{
-      clearTimeout(to);
-      if (session?.user) initUser(session.user); else setLoading(false);
-    }).catch(()=>{ clearTimeout(to); setLoading(false); });
+    // Timeout: show login after 3s no matter what
+    const to = setTimeout(()=>{ setLoading(false); }, 3000);
+    // Auth state listener
     const {data:{subscription}} = sb.auth.onAuthStateChange((_,session)=>{
+      clearTimeout(to);
       if (session?.user) initUser(session.user);
       else { setUser(null); setProfile(null); setLoading(false); }
     });
+    // Check existing session
+    sb.auth.getSession().then(({data:{session},error})=>{
+      if (error || !session?.user) { /* onAuthStateChange handles it */ }
+      else { clearTimeout(to); initUser(session.user); }
+    }).catch(()=>{ clearTimeout(to); setLoading(false); });
     return ()=>{ subscription.unsubscribe(); clearTimeout(to); };
   },[]);
 
