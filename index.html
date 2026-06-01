@@ -10,7 +10,7 @@
   <link rel="manifest" href="manifest.json"/>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;}
@@ -50,11 +50,18 @@ try {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: false
     }
   });
+  console.log("✓ Supabase client created");
 } catch(e) {
   console.error("Supabase init error:", e);
+  document.getElementById("root").innerHTML = 
+    '<div style="color:#f87171;padding:40px;font-family:sans-serif;background:#060e08;min-height:100vh">' +
+    '<h2 style="color:#4ade80">⛳ GolfTracker</h2>' +
+    '<p>Verbindungsfehler: ' + (e.message||e) + '</p>' +
+    '<p style="color:#6b9e7a;font-size:13px">Bitte prüfe die Supabase-URL und den API-Key in Zeile 42-43.</p>' +
+    '</div>';
 }
 const {useState,useEffect,useRef} = React;
 // ── Custom lightweight charts (no external dependency) ──
@@ -258,13 +265,17 @@ function App(){
   const[loading,setLoading]=useState(true);
 
   useEffect(()=>{
+    if(!sb){setLoading(false);return;}
+    // Timeout fallback - if no response in 5s, show login
+    const timeout=setTimeout(()=>setLoading(false),5000);
     sb.auth.getSession().then(({data:{session}})=>{
+      clearTimeout(timeout);
       if(session?.user){initUser(session.user);}else{setLoading(false);}
-    });
+    }).catch(()=>{clearTimeout(timeout);setLoading(false);});
     const{data:{subscription}}=sb.auth.onAuthStateChange((_,session)=>{
       if(session?.user)initUser(session.user);else{setUser(null);setProfile(null);setLoading(false);}
     });
-    return()=>subscription.unsubscribe();
+    return()=>{subscription.unsubscribe();clearTimeout(timeout);};
   },[]);
 
   const initUser=async(u)=>{
@@ -285,6 +296,7 @@ function App(){
   if(loading)return<div style={{height:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:20}}>
     <span style={{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}}>⛳</span>
     <span style={{fontSize:13,color:T.muted,textAlign:"center"}}>Verbinde mit Datenbank…</span>
+    <span style={{fontSize:11,color:T.faint,textAlign:"center"}}>Falls dies länger dauert, bitte Seite neu laden.</span>
   </div>;
   if(!user)return<AuthScreen onLogin={u=>initUser(u)}/>;
 
