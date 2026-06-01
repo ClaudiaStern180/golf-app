@@ -205,11 +205,41 @@
   <div id="admin-content"></div>
 </div>
 
+<!-- SERVICE PAGE -->
+<div id="pg-service" class="page">
+  <h2>💬 Service</h2>
+  <div class="card" style="margin-bottom:12px;">
+    <div style="font-size:13px;color:#6b9e7a;line-height:1.6;">
+      Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.
+    </div>
+  </div>
+  <div class="card">
+    <label class="label">Betreff</label>
+    <select id="svc-subject">
+      <option value="Vorschlag">💡 Vorschlag / Idee</option>
+      <option value="Problem">⚠️ Problem / Fehler</option>
+      <option value="Frage">❓ Frage</option>
+      <option value="Platz fehlt">🗺️ Platz fehlt / Daten falsch</option>
+      <option value="Sonstiges">📝 Sonstiges</option>
+    </select>
+    <label class="label" style="margin-top:10px;">Nachricht</label>
+    <textarea id="svc-message" placeholder="Deine Nachricht an den Admin…" style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;min-height:120px;resize:vertical;font-family:inherit;margin-top:4px;"></textarea>
+    <div id="svc-result"></div>
+    <button class="btn btn-green" onclick="sendServiceMessage()" style="margin-top:12px;">📨 Nachricht senden</button>
+  </div>
+
+  <div class="card" style="margin-top:12px;" id="svc-history">
+    <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Meine gesendeten Nachrichten</div>
+    <div id="svc-history-list" class="muted" style="font-size:13px;">Lade…</div>
+  </div>
+</div>
+
 <nav id="main-nav" style="display:none;">
   <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span>Home</button>
   <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span>Plätze</button>
   <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span>Runde</button>
   <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span>Stats</button>
+  <button onclick="showPage('pg-service')" id="nav-service"><span>💬</span>Service</button>
   <button onclick="showPage('pg-admin')" id="nav-admin" style="display:none;"><span>🛡️</span>Admin</button>
   <button onclick="logout()"><span>👤</span>Logout</button>
 </nav>
@@ -274,6 +304,7 @@ function showPage(id) {
   if (id === 'pg-round') renderRoundPage();
   if (id === 'pg-admin') renderAdmin();
   if (id === 'pg-home') renderHome();
+  if (id === 'pg-service') renderServiceHistory();
 }
 
 function teeChip(t) {
@@ -933,6 +964,52 @@ function renderStatSection(id) {
   }
 }
 
+// ── SERVICE ──
+async function sendServiceMessage() {
+  const subject = document.getElementById('svc-subject').value;
+  const message = document.getElementById('svc-message').value.trim();
+  const res = document.getElementById('svc-result');
+  if (!message) { res.innerHTML = '<div class="err">Bitte eine Nachricht eingeben.</div>'; return; }
+  res.innerHTML = '<div class="muted" style="margin-top:8px;font-size:13px;">⏳ Wird gesendet…</div>';
+  try {
+    const {error} = await sb.from('service_messages').insert({
+      user_id: currentUser.id,
+      user_name: currentProfile?.display_name || currentUser.email,
+      user_email: currentUser.email,
+      subject,
+      message,
+      status: 'offen'
+    });
+    if (error) throw error;
+    res.innerHTML = '<div class="ok" style="margin-top:8px;">✅ Nachricht gesendet! Der Admin wird sich melden.</div>';
+    document.getElementById('svc-message').value = '';
+    renderServiceHistory();
+  } catch(ex) {
+    res.innerHTML = '<div class="err" style="margin-top:8px;">⚠️ Fehler: ' + ex.message + '</div>';
+  }
+}
+
+async function renderServiceHistory() {
+  const list = document.getElementById('svc-history-list');
+  if (!list) return;
+  const {data} = await sb.from('service_messages')
+    .select('*').eq('user_id', currentUser.id)
+    .order('created_at', {ascending:false});
+  if (!data?.length) { list.innerHTML = 'Noch keine Nachrichten gesendet.'; return; }
+  const statusColor = s => s==='offen'?'#fbbf24':s==='beantwortet'?'#4ade80':'#6b9e7a';
+  const statusLabel = s => s==='offen'?'⏳ Offen':s==='beantwortet'?'✅ Beantwortet':'📁 Geschlossen';
+  list.innerHTML = data.map(m => `
+    <div style="border-top:1px solid #2d4d38;padding:10px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:13px;font-weight:600;">${m.subject}</div>
+        <div style="font-size:11px;color:${statusColor(m.status)};font-weight:600;">${statusLabel(m.status)}</div>
+      </div>
+      <div class="muted" style="font-size:12px;margin-bottom:4px;">${m.message}</div>
+      ${m.reply ? `<div style="background:#22c55e11;border-left:3px solid #4ade80;padding:8px;border-radius:0 8px 8px 0;margin-top:6px;font-size:12px;"><span style="color:#4ade80;font-weight:600;">Admin:</span> ${m.reply}</div>` : ''}
+      <div class="muted" style="font-size:10px;margin-top:4px;">${new Date(m.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+    </div>`).join('');
+}
+
 // ── DELETE ROUND ──
 async function deleteRound(id) {
   if (!confirm('Diese Runde wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
@@ -954,6 +1031,10 @@ async function renderAdmin() {
   ]);
   const nets = allRounds.flatMap(r=>r.players?.map(p=>r.totals?.[p.id]?.nettoStableford||0)||[]);
   const avg = nets.length?(nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1):'—';
+  // Load service messages too
+  const msgs = await sb.from('service_messages').select('*').order('created_at',{ascending:false}).then(r=>r.data||[]);
+  const openMsgs = msgs.filter(m=>m.status==='offen').length;
+
   $('admin-content').innerHTML = `
     <div class="grid3" style="margin-bottom:16px;">
       <div class="stat-box"><div class="big-num">${users.length}</div><div class="muted" style="font-size:10px;">Spieler</div></div>
@@ -984,7 +1065,43 @@ async function renderAdmin() {
           <div style="text-align:right;"><div class="big-num" style="font-size:24px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:10px;">Netto</div></div>
         </div>
       </div>`;
-    }).join('')}`;
+    }).join('')}
+    <h3 style="margin:16px 0 10px;">💬 Service Nachrichten ${openMsgs>0?`<span style="background:#fbbf24;color:#000;border-radius:10px;padding:2px 8px;font-size:11px;margin-left:6px;">${openMsgs} offen</span>`:''}
+    </h3>
+    ${msgs.length===0?'<div class="muted" style="padding:10px;">Keine Nachrichten.</div>':
+      msgs.map(m=>{
+        const u=users.find(x=>x.id===m.user_id);
+        const statusColor=m.status==='offen'?'#fbbf24':m.status==='beantwortet'?'#4ade80':'#6b9e7a';
+        return`<div class="card" style="margin-bottom:8px;border-color:${m.status==='offen'?'#fbbf2444':'#17332044'};">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+            <div>
+              <div style="font-weight:600;font-size:13px;">${m.subject}</div>
+              <div class="muted" style="font-size:11px;">👤 ${u?.display_name||m.user_name||'?'} · ${new Date(m.created_at).toLocaleDateString('de-DE')}</div>
+            </div>
+            <span style="font-size:11px;color:${statusColor};font-weight:600;background:${statusColor}22;border-radius:6px;padding:2px 8px;">${m.status}</span>
+          </div>
+          <div style="font-size:13px;color:#ecfdf5;margin-bottom:8px;">${m.message}</div>
+          ${m.reply?`<div style="background:#22c55e11;border-left:3px solid #4ade80;padding:8px;border-radius:0 8px 8px 0;font-size:12px;margin-bottom:8px;"><span style="color:#4ade80;font-weight:600;">Antwort:</span> ${m.reply}</div>`:''}
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-dark btn-sm" onclick="adminReply('${m.id}','${(m.reply||'').replace(/'/g,"\'")}')">✏️ Antworten</button>
+            ${m.status==='offen'?`<button class="btn btn-dark btn-sm" onclick="adminSetStatus('${m.id}','beantwortet')">✅ Als beantwortet</button>`:''}
+            ${m.status!=='geschlossen'?`<button class="btn btn-dark btn-sm" onclick="adminSetStatus('${m.id}','geschlossen')">📁 Schließen</button>`:''}
+          </div>
+        </div>`;
+      }).join('')}
+    `;
+}
+
+async function adminReply(id, current) {
+  const reply = prompt('Antwort an den Spieler:', current||'');
+  if (reply === null) return;
+  await sb.from('service_messages').update({reply, status:'beantwortet'}).eq('id',id);
+  renderAdmin();
+}
+
+async function adminSetStatus(id, status) {
+  await sb.from('service_messages').update({status}).eq('id',id);
+  renderAdmin();
 }
 </script>
 </body>
