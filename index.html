@@ -257,24 +257,22 @@ function App() {
   const [rounds, setRounds] = useState([]);
   const [savedPlayers, setSavedPlayers] = useState([]);
   const [activeRound, setActiveRound] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(()=>{
-    if (!sb) { setLoading(false); return; }
-    // Timeout: show login after 3s no matter what
-    const to = setTimeout(()=>{ setLoading(false); }, 3000);
-    // Auth state listener
-    const {data:{subscription}} = sb.auth.onAuthStateChange((_,session)=>{
-      clearTimeout(to);
+    if (!sb) return;
+    // Don't wait - show login immediately, restore session in background
+    setLoading(false);
+    // Check if already logged in (silent, no spinner)
+    sb.auth.getSession().then(({data:{session}})=>{
       if (session?.user) initUser(session.user);
-      else { setUser(null); setProfile(null); setLoading(false); }
+    }).catch(()=>{});
+    // Listen for future auth changes
+    const {data:{subscription}} = sb.auth.onAuthStateChange((_,session)=>{
+      if (session?.user) initUser(session.user);
+      else { setUser(null); setProfile(null); }
     });
-    // Check existing session
-    sb.auth.getSession().then(({data:{session},error})=>{
-      if (error || !session?.user) { /* onAuthStateChange handles it */ }
-      else { clearTimeout(to); initUser(session.user); }
-    }).catch(()=>{ clearTimeout(to); setLoading(false); });
-    return ()=>{ subscription.unsubscribe(); clearTimeout(to); };
+    return ()=>subscription.unsubscribe();
   },[]);
 
   const initUser = async (u) => {
@@ -302,10 +300,7 @@ function App() {
     setRounds(fresh);
   };
 
-  if (loading) return e("div",{style:{height:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}},
-    e("span",{style:{fontSize:48,display:"inline-block",animation:"spin 1.2s linear infinite"}},"⛳"),
-    e("span",{style:{fontSize:13,color:T.muted}},"Verbinde…")
-  );
+  // No spinner - show login or app immediately
   if (!user || !sb) return e(AuthScreen, {onLogin: u=>initUser(u)});
 
   const navItems = [
