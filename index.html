@@ -905,19 +905,20 @@ function renderStatSection(id) {
     $('stat-verlauf').innerHTML = `
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
-        ${[['Fairway %',''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','Ziel: ≥ 60%'],
-           ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','Ziel: ≥ 50%'],
-           ['Ø Putts/Loch',avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','Ziel: ≤ 2.0'],
-           ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','Ziel: < 1.0'],
-           ['Par 5 ⌀','+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','Ziel: < 0.5'],
-        ].map(([l,v,c,z])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">${z}</div></div></div>`).join('')}
+        ${[
+          ['Fairway %',''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','≥ 60%','Abschlag landet auf dem Fairway'],
+          ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%','Grün in Regulation erreicht (Par-2 Schläge)'],
+          ['Ø Putts/Loch',avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','≤ 2.0','Maximal 2 Putts pro Loch'],
+          ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','< 1.0','Im Schnitt Bogey oder besser auf Par-3-Löchern'],
+          ['Par 5 ⌀','+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','< 0.5','Fast immer Par oder besser auf Par-5-Löchern'],
+        ].map(([l,v,c,z,desc])=>`<div class="row"><div style="flex:1;"><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v} <span style="font-size:11px;color:#6b9e7a;font-weight:400;">(Ziel: ${z})</span></div><div class="muted" style="font-size:10px;margin-top:1px;">${desc}</div></div><div style="font-size:18px;margin-left:8px;">${c==='#4ade80'?'✅':c==='#fbbf24'?'⚠️':'❌'}</div></div>`).join('')}
       </div>
       <div class="card" style="margin-top:10px;" id="trend-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div style="font-size:12px;color:#4ade80;font-weight:600;">📈 Trend</div>
           <div style="display:flex;gap:6px;">
             <button class="tog on" id="trend-btn-alle" onclick="setTrendMode('alle')" style="font-size:11px;padding:4px 10px;">📋 Alle</button>
-            <button class="tog" id="trend-btn-monat" onclick="setTrendMode('monat')" style="font-size:11px;padding:4px 10px;">📅 Monat</button>
+            <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">🔟 Letzte 10</button>
           </div>
         </div>
         <div id="trend-content">${renderTrendCharts(norm,'alle')}</div>
@@ -1106,7 +1107,7 @@ async function renderServiceHistory() {
 let _trendNorm = [];
 
 function setTrendMode(mode) {
-  ['alle','monat'].forEach(m => {
+  ['alle','last10'].forEach(m => {
     const btn = document.getElementById('trend-btn-'+m);
     if (btn) { btn.classList.toggle('on', m===mode); }
   });
@@ -1140,21 +1141,12 @@ function buildTrendCharts(norm, mode) {
   };
 
   let trendData;
-  if (mode === 'monat') {
-    const byMonth = {};
-    norm.forEach(r => {
-      const d = new Date(r.date);
-      const key = d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');
-      if (!byMonth[key]) byMonth[key] = {label:MONTHS[d.getMonth()]+' '+String(d.getFullYear()).slice(2), rounds:[]};
-      byMonth[key].rounds.push(getRoundData(r));
-    });
-    // Sort by key ascending
-    trendData = Object.entries(byMonth).sort(([a],[b])=>a.localeCompare(b)).map(([,m])=>{
-      const avg = key => {
-        const vals=m.rounds.map(r=>r[key]).filter(v=>v!==null&&v!==undefined);
-        return vals.length?parseFloat((vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1)):null;
-      };
-      return {label:m.label,netto:avg('netto'),brutto:avg('brutto'),fw:avg('fw'),gir:avg('gir'),putts:avg('putts')};
+  if (mode === 'last10') {
+    // Last 10 rounds, oldest to newest
+    trendData = norm.slice(-10).map(r=>{
+      const d=getRoundData(r);
+      const date=new Date(r.date);
+      return {...d, label:date.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})};
     });
   } else {
     // All rounds as individual points, oldest to newest
@@ -1175,42 +1167,71 @@ function buildTrendCharts(norm, mode) {
     ['Ø Putts/Loch (Ziel: 2.0)','putts','#f87171',1,3,''],
   ];
 
+  // target: numeric goal value, higherBetter: true=green when above target
+  const TARGETS = {netto:null,brutto:null,fw:60,gir:50,putts:2.0};
+  const HIGHER_BETTER = {netto:true,brutto:true,fw:true,gir:true,putts:false};
+
   const drawChart = (data, key, color, minV, maxV, unit='') => {
     const pts = data.filter(d=>d[key]!==null);
     if (pts.length < 2) return '';
-    const W=300, H=100, PL=32, PR=12, PT=22, PB=24;
+    const W=300, H=105, PL=32, PR=12, PT=22, PB=24;
     const vals = pts.map(d=>d[key]);
-    const mn = minV!==undefined ? minV : Math.min(...vals)-(Math.max(...vals)-Math.min(...vals))*0.1;
-    const mx = maxV!==undefined ? maxV : Math.max(...vals)+(Math.max(...vals)-Math.min(...vals))*0.1;
+    const target = TARGETS[key];
+    const higherBetter = HIGHER_BETTER[key] !== false;
+    const rawMin=Math.min(...vals); const rawMax=Math.max(...vals);
+    const pad=(rawMax-rawMin)*0.15||1;
+    const mn = minV!==undefined ? minV : rawMin-pad;
+    const mx = maxV!==undefined ? maxV : rawMax+pad;
     const rng = mx-mn || 1;
     const x = i => PL + (i/(pts.length-1))*(W-PL-PR);
     const y = v => PT + (1-(v-mn)/rng)*(H-PT-PB);
     const polyline = pts.map((d,i)=>`${x(i)},${y(d[key])}`).join(' ');
-    const maxVal=Math.max(...vals); const minVal=Math.min(...vals);
-    // Smart label: show all if ≤6 pts, else show first/last/min/max
-    const showLabel = (i,v) => pts.length<=6 || i===0 || i===pts.length-1 || v===maxVal || v===minVal;
-    const uid = key+Date.now().toString(36);
+
+    // Point color: green=meets target, red=misses target; if no target: best=green worst=red
+    const ptColor = v => {
+      if (target!==null) return (higherBetter?(v>=target):(v<=target)) ? '#4ade80' : '#f87171';
+      return v===rawMax?(higherBetter?'#4ade80':'#f87171'): v===rawMin?(higherBetter?'#f87171':'#4ade80'): color;
+    };
+
+    // Show label: always for ≤5 pts, else first/last/best/worst
+    const showLabel = (i,v) => pts.length<=5 || i===0 || i===pts.length-1 || v===rawMax || v===rawMin;
+    const uid = key+Math.random().toString(36).slice(2,6);
+
     return `<div style="position:relative;overflow:visible;">
       <svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;" id="chart-${uid}">
-        ${[0,0.5,1].map(t=>`<line x1="${PL}" x2="${W-PR}" y1="${PT+t*(H-PT-PB)}" y2="${PT+t*(H-PT-PB)}" stroke="#2d4d38" stroke-dasharray="3" stroke-width="1"/>`).join('')}
-        <polygon points="${PL},${H-PB} ${pts.map((d,i)=>`${x(i)},${y(d[key])}`).join(' ')} ${x(pts.length-1)},${H-PB}" fill="${color}" fill-opacity="0.1"/>
-        <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- Grid lines -->
+        ${[0,0.5,1].map(t=>`<line x1="${PL}" x2="${W-PR}" y1="${PT+t*(H-PT-PB)}" y2="${PT+t*(H-PT-PB)}" stroke="#2d4d38" stroke-dasharray="2,3" stroke-width="1"/>`).join('')}
+        <!-- Target line -->
+        ${target!==null && target>=mn && target<=mx ? `
+          <line x1="${PL}" x2="${W-PR}" y1="${y(target)}" y2="${y(target)}" stroke="${higherBetter?'#4ade8066':'#f8717166'}" stroke-dasharray="4,3" stroke-width="1.5"/>
+          <text x="${W-PR+2}" y="${y(target)+4}" fill="${higherBetter?'#4ade80':'#f87171'}" font-size="8">Ziel</text>
+        ` : ''}
+        <!-- Fill -->
+        <polygon points="${PL},${H-PB} ${pts.map((d,i)=>`${x(i)},${y(d[key])}`).join(' ')} ${x(pts.length-1)},${H-PB}" fill="${color}" fill-opacity="0.07"/>
+        <!-- Line -->
+        <polyline points="${polyline}" fill="none" stroke="#2d4d38" stroke-width="1" stroke-linejoin="round"/>
+        <!-- Segments colored by target -->
+        ${pts.slice(1).map((d,i)=>{
+          const v0=pts[i][key]; const v1=d[key];
+          const segColor=(ptColor(v0)===ptColor(v1))?ptColor(v0):color;
+          return `<line x1="${x(i)}" y1="${y(v0)}" x2="${x(i+1)}" y2="${y(v1)}" stroke="${segColor}" stroke-width="2.5" stroke-linecap="round"/>`;
+        }).join('')}
+        <!-- Points + labels -->
         ${pts.map((d,i)=>{
-          const v=d[key]; const isMax=v===maxVal; const isMin=v===minVal;
+          const v=d[key]; const pc=ptColor(v);
           const fmt=Number.isInteger(v)?v:parseFloat(v).toFixed(1);
           const showLbl=showLabel(i,v);
-          return `<circle cx="${x(i)}" cy="${y(v)}" r="${isMax||isMin?5:3.5}"
-            fill="${isMin?'#f87171':color}" stroke="#0b1e10" stroke-width="1.5"
-            onclick="showChartTip(event,'${d.label}','${fmt}${unit}','${color}')"
+          const anchor=i===0?'start':i===pts.length-1?'end':'middle';
+          return `<circle cx="${x(i)}" cy="${y(v)}" r="4"
+            fill="${pc}" stroke="#0b1e10" stroke-width="1.5"
+            onclick="showChartTip(event,'${d.label}','${fmt}${unit}','${pc}')"
             style="cursor:pointer;"/>
-          ${showLbl?`<text x="${x(i)}" y="${y(v)-9}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}"
-            fill="${isMin?'#f87171':isMax?color:'#6b9e7a'}"
-            font-size="${isMax||isMin?10:9}"
-            font-weight="${isMax||isMin?'bold':'normal'}">${fmt}${unit}</text>`:''}
-          <text x="${x(i)}" y="${H}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}" fill="#6b9e7a" font-size="8">${d.label}</text>`;
+          ${showLbl?`<text x="${x(i)}" y="${y(v)-8}" text-anchor="${anchor}"
+            fill="${pc}" font-size="8" font-weight="600">${fmt}${unit}</text>`:''}
+          <text x="${x(i)}" y="${H}" text-anchor="${anchor}" fill="#6b9e7a" font-size="7.5">${d.label}</text>`;
         }).join('')}
       </svg>
-      <div id="tip-${uid}" style="display:none;position:absolute;top:0;left:0;background:#0b1e10;border:1px solid ${color};border-radius:8px;padding:5px 10px;font-size:12px;pointer-events:none;z-index:20;white-space:nowrap;"></div>
+      <div id="tip-${uid}" style="display:none;position:absolute;top:0;left:0;background:#060e08;border:1px solid #173320;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;pointer-events:none;z-index:20;white-space:nowrap;"></div>
     </div>`;
   };
 
