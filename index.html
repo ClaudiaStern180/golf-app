@@ -910,7 +910,7 @@ function renderStatSection(id) {
             const girA=sc.filter(h=>h.gir!==null); const gir=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):null;
             const puttA=sc.filter(h=>h.putts!=null); const putts=puttA.length?parseFloat((puttA.reduce((s,h)=>s+h.putts,0)/puttA.length).toFixed(1)):null;
             const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-            return{date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),fw,gir,putts,netto:t.nettoStableford||0};
+            return{date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),fw,gir,putts,netto:t.nettoStableford||0,brutto:t.bruttoStableford||0};
           });
           const svgLine=(data,key,color,minV,maxV,h=60)=>{
             const pts=data.filter(d=>d[key]!==null);
@@ -931,7 +931,8 @@ function renderStatSection(id) {
             </svg>`;
           };
           return [
-            ['Netto Stableford',svgLine(trendData,'netto','#4ade80')],
+            ['Netto Stableford Pkt.',svgLine(trendData,'netto','#4ade80')],
+            ['Brutto Stableford Pkt.',svgLine(trendData,'brutto','#fb923c')],
             ['Fairway % (Ziel: 60%)',svgLine(trendData,'fw','#fbbf24',0,100)],
             ['GIR % (Ziel: 50%)',svgLine(trendData,'gir','#60a5fa',0,100)],
             ['Ø Putts/Loch (Ziel: 2.0)',svgLine(trendData,'putts','#f87171',1,3)],
@@ -1306,7 +1307,12 @@ async function renderAdmin() {
       return`<div class="card" style="margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div><div style="font-weight:600;font-size:13px;">${r.course_name}</div><div class="muted" style="font-size:11px;">👤 ${u?.display_name||'?'} · ${new Date(r.date).toLocaleDateString('de-DE')}</div></div>
-          <div style="text-align:right;"><div class="big-num" style="font-size:24px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:10px;">Netto</div></div>
+          <div style="text-align:right;">
+              <div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div>
+              <div class="muted" style="font-size:10px;">Netto Pkt.</div>
+              <div style="font-size:13px;font-weight:600;color:#fb923c;">${t.bruttoStableford||0}</div>
+              <div class="muted" style="font-size:10px;">Brutto Pkt.</div>
+            </div>
         </div>
       </div>`;
     }).join('')}
@@ -1328,8 +1334,9 @@ async function renderAdmin() {
           ${m.reply?`<div style="background:#22c55e11;border-left:3px solid #4ade80;padding:8px;border-radius:0 8px 8px 0;font-size:12px;margin-bottom:8px;"><span style="color:#4ade80;font-weight:600;">Antwort:</span> ${m.reply}</div>`:''}
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn btn-dark btn-sm" onclick="adminReply('${m.id}','${(m.reply||'').replace(/'/g,"\'")}')">✏️ Antworten</button>
-            ${m.status==='offen'?`<button class="btn btn-dark btn-sm" onclick="adminSetStatus('${m.id}','beantwortet')">✅ Als beantwortet</button>`:''}
+            ${m.status==='offen'?`<button class="btn btn-dark btn-sm" onclick="adminSetStatus('${m.id}','beantwortet')">✅ Beantwortet</button>`:''}
             ${m.status!=='geschlossen'?`<button class="btn btn-dark btn-sm" onclick="adminSetStatus('${m.id}','geschlossen')">📁 Schließen</button>`:''}
+            <button class="btn btn-red btn-sm" onclick="adminDeleteMsg('${m.id}')">🗑 Löschen</button>
           </div>
         </div>`;
       }).join('')}
@@ -1345,6 +1352,12 @@ async function adminReply(id, current) {
 
 async function adminSetStatus(id, status) {
   await sb.from('service_messages').update({status}).eq('id',id);
+  renderAdmin();
+}
+
+async function adminDeleteMsg(id) {
+  if (!confirm('Nachricht löschen?')) return;
+  await sb.from('service_messages').delete().eq('id',id);
   renderAdmin();
 }
 </script>
