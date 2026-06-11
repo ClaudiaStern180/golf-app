@@ -95,10 +95,14 @@
     </div>
   </div>
   <div id="home-active-round"></div>
-  <div class="grid3" style="margin-bottom:12px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
     <div class="stat-box"><div class="big-num" id="stat-rounds">0</div><div class="muted" style="font-size:10px;margin-top:2px;">Runden</div></div>
     <div class="stat-box"><div class="big-num" id="stat-avg">—</div><div class="muted" style="font-size:10px;margin-top:2px;">⌀ Netto</div></div>
-    <div class="stat-box"><div class="big-num" id="stat-best">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-best">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste Netto</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+    <div class="stat-box"><div class="big-num" id="stat-avg-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;">⌀ Brutto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-best-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste Brutto</div></div>
   </div>
   <div id="home-last-round"></div>
   <button class="btn btn-green" onclick="showPage('pg-round')">⛳ Neue Runde starten</button>
@@ -412,9 +416,12 @@ function renderHome() {
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
   $('stat-rounds').textContent = rounds.length;
-  const nets = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
-  $('stat-avg').textContent = nets.length ? (nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1) : '—';
-  $('stat-best').textContent = rounds.length ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)) : '—';
+  const nets   = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
+  const bruttos = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0);
+  $('stat-avg').textContent  = nets.length    ? (nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1)    : '—';
+  $('stat-best').textContent = rounds.length  ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0))   : '—';
+  $('stat-avg-brutto').textContent  = bruttos.length ? (bruttos.reduce((a,b)=>a+b,0)/bruttos.length).toFixed(1) : '—';
+  $('stat-best-brutto').textContent = rounds.length  ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0)) : '—';
 
   if (activeRound) {
     $('home-active-round').innerHTML = `
@@ -441,9 +448,11 @@ function renderHome() {
             <div style="margin-top:4px;">${teeChip(last.tee_type||'yellow')}</div>
           </div>
           <div style="text-align:right;">
-            <div class="muted" style="font-size:10px;">Netto Stableford</div>
-            <div class="big-num">${t.nettoStableford||'—'}</div>
-            <div class="muted" style="font-size:11px;">${t.bruttoStableford||'—'} Brutto Pkt. · ${t.bruttoScore||'—'} Schl.</div>
+            <div style="display:flex;gap:12px;align-items:baseline;justify-content:flex-end;">
+              <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num">${t.nettoStableford||'—'}</div></div>
+              <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:20px;font-weight:700;color:#fb923c;">${t.bruttoStableford||'—'}</div></div>
+            </div>
+            <div class="muted" style="font-size:10px;margin-top:2px;">${t.bruttoScore||'—'} Schläge</div>
           </div>
         </div>
       </div>`;
@@ -1470,8 +1479,8 @@ async function renderAdmin() {
           <div><div style="font-weight:600;font-size:13px;">${r.course_name}</div><div class="muted" style="font-size:11px;">👤 ${u?.display_name||'?'} · ${new Date(r.date).toLocaleDateString('de-DE')}</div></div>
           <div style="text-align:right;">
               <div style="display:flex;gap:12px;align-items:baseline;justify-content:flex-end;">
-                <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:18px;font-weight:700;color:#fb923c;">${t.bruttoStableford||0}</div></div>
                 <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div></div>
+                <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:18px;font-weight:700;color:#fb923c;">${t.bruttoStableford||0}</div></div>
               </div>
             </div>
         </div>
