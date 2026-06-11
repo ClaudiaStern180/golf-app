@@ -188,12 +188,14 @@
 <div id="pg-stats" class="page">
   <h2>Analyse</h2>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="tog on" onclick="showStat('verlauf',this)">📈 Verlauf</button>
+    <button class="tog on" onclick="showStat('verlauf',this)">📋 Verlauf</button>
+    <button class="tog" onclick="showStat('trend',this)">📈 Trend</button>
     <button class="tog" onclick="showStat('radar',this)">🎯 Radar</button>
     <button class="tog" onclick="showStat('tips',this)">💡 Tipps</button>
     <button class="tog" onclick="showStat('sim',this)">🧮 HCP-Sim</button>
   </div>
   <div id="stat-verlauf"></div>
+  <div id="stat-trend" style="display:none;"></div>
   <div id="stat-radar" style="display:none;"></div>
   <div id="stat-tips" style="display:none;"></div>
   <div id="stat-sim" style="display:none;"></div>
@@ -881,7 +883,7 @@ async function saveRound() {
 
 // ── STATS ──
 function showStat(id, btn) {
-  ['verlauf','radar','tips','sim'].forEach(s=>{ $('stat-'+s).style.display='none'; });
+  ['verlauf','trend','radar','tips','sim'].forEach(s=>{ $('stat-'+s).style.display='none'; });
   $('stat-'+id).style.display='block';
   document.querySelectorAll('#pg-stats .tog').forEach(b=>b.classList.remove('on'));
   if(btn) btn.classList.add('on');
@@ -907,23 +909,13 @@ function renderStatSection(id) {
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
         ${[
           ['Fairway %',''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','≥ 60%','Abschlag landet auf dem Fairway'],
-          ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%','Grün in Regulation erreicht (Par-2 Schläge)'],
+          ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%','Grün in Regulation (Par minus 2 Schläge)'],
           ['Ø Putts/Loch',avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','≤ 2.0','Maximal 2 Putts pro Loch'],
-          ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','< 1.0','Im Schnitt Bogey oder besser auf Par-3-Löchern'],
+          ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','< 1.0','Bogey oder besser auf Par-3-Löchern'],
           ['Par 5 ⌀','+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','< 0.5','Fast immer Par oder besser auf Par-5-Löchern'],
-        ].map(([l,v,c,z,desc])=>`<div class="row"><div style="flex:1;"><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v} <span style="font-size:11px;color:#6b9e7a;font-weight:400;">(Ziel: ${z})</span></div><div class="muted" style="font-size:10px;margin-top:1px;">${desc}</div></div><div style="font-size:18px;margin-left:8px;">${c==='#4ade80'?'✅':c==='#fbbf24'?'⚠️':'❌'}</div></div>`).join('')}
+        ].map(([l,v,c,z,desc])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">Ziel: ${z} <span style="color:#4ade8088;">(${desc})</span></div></div></div>`).join('')}
       </div>
-      <div class="card" style="margin-top:10px;" id="trend-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div style="font-size:12px;color:#4ade80;font-weight:600;">📈 Trend</div>
-          <div style="display:flex;gap:6px;">
-            <button class="tog on" id="trend-btn-alle" onclick="setTrendMode('alle')" style="font-size:11px;padding:4px 10px;">📋 Alle</button>
-            <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">🔟 Letzte 10</button>
-          </div>
-        </div>
-        <div id="trend-content">${renderTrendCharts(norm,'alle')}</div>
-      </div>
-      <div class="card" style="margin-top:10px;">
+<div class="card" style="margin-top:10px;">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Alle Runden</div>
         ${norm.map(r=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return`
           <div class="row" style="align-items:center;cursor:pointer;" onclick="showRoundDetail('${r.id}')">
@@ -933,14 +925,35 @@ function renderStatSection(id) {
               <div style="font-size:10px;color:#4ade8088;margin-top:2px;">👆 Tippen für Details</div>
             </div>
             <div style="text-align:right;margin-right:10px;">
-              <div style="font-size:17px;font-weight:700;color:#4ade80;">${t.nettoStableford||0} Pkt.</div>
-              <div class="muted" style="font-size:10px;">${t.bruttoStableford||0} Brutto Pkt. · ${t.bruttoScore||0} Schl.</div>
+              <div style="font-size:16px;font-weight:700;">
+                <span style="color:#4ade80;">${t.nettoStableford||0}</span>
+                <span class="muted" style="font-size:12px;"> Netto · </span>
+                <span style="color:#fb923c;">${t.bruttoStableford||0}</span>
+                <span class="muted" style="font-size:12px;"> Brutto</span>
+              </div>
+              <div class="muted" style="font-size:10px;">${t.bruttoScore||0} Schläge</div>
             </div>
             <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="event.stopPropagation();deleteRound('${r.id}')">🗑</button>
           </div>`;}).join('')}
       </div>`;
   }
 
+  if (id==='trend') {
+    const norm2 = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',teeType:r.tee_type||r.teeType||'yellow',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
+    const sorted = [...norm2].sort((a,b)=>new Date(a.date)-new Date(b.date));
+    $('stat-trend').innerHTML = `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:12px;color:#4ade80;font-weight:600;">📈 Trendkurven</div>
+          <div style="display:flex;gap:6px;">
+            <button class="tog on" id="trend-btn-alle" onclick="setTrendMode('alle')" style="font-size:11px;padding:4px 10px;">📋 Alle</button>
+            <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">🔟 Letzte 10</button>
+          </div>
+        </div>
+        <div id="trend-content">${renderTrendCharts(sorted,'alle')}</div>
+      </div>`;
+    return;
+  }
   if (id==='radar') {
     const byPar=p=>allSc.filter(h=>h.par===p);
     const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
@@ -1505,11 +1518,11 @@ async function adminSetStatus(id, status) {
 
 async function adminDeleteMsg(id) {
   if (!confirm('Nachricht wirklich löschen?')) return;
-  // Try hard delete first, fall back to soft delete (mark as gelöscht)
-  const {error} = await sb.from('service_messages').delete().eq('id',id);
+  // Use soft delete (mark as gelöscht) - works without extra SQL policy
+  const {error} = await sb.from('service_messages').update({status:'gelöscht'}).eq('id',id);
   if (error) {
-    // Soft delete if RLS blocks hard delete
-    await sb.from('service_messages').update({status:'gelöscht'}).eq('id',id);
+    alert('Fehler beim Löschen: ' + error.message);
+    return;
   }
   renderAdmin();
 }
