@@ -407,10 +407,10 @@ function renderHome() {
   if (last) {
     const p0 = last.players?.[0]; const t = last.totals?.[p0?.id]||{};
     $('home-last-round').innerHTML = `
-      <div class="card" style="margin-bottom:12px;">
+      <div class="card" style="margin-bottom:12px;cursor:pointer;" onclick="showRoundDetail('${last.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;">LETZTE RUNDE</div>
-          <button class="btn btn-red btn-sm" style="padding:4px 10px;font-size:11px;" onclick="deleteRound('${last.id}')">🗑 Löschen</button>
+          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;">LETZTE RUNDE 👆</div>
+          <button class="btn btn-red btn-sm" style="padding:4px 10px;font-size:11px;" onclick="event.stopPropagation();deleteRound('${last.id}')">🗑 Löschen</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
@@ -421,7 +421,7 @@ function renderHome() {
           <div style="text-align:right;">
             <div class="muted" style="font-size:10px;">Netto Stableford</div>
             <div class="big-num">${t.nettoStableford||'—'}</div>
-            <div class="muted">Brutto: ${t.bruttoScore||'—'}</div>
+            <div class="muted" style="font-size:11px;">${t.bruttoStableford||'—'} Brutto Pkt. · ${t.bruttoScore||'—'} Schl.</div>
           </div>
         </div>
       </div>`;
@@ -700,7 +700,12 @@ function startRound() {
   if (!players.length) { alert('Bitte mindestens einen Spieler auswählen'); return; }
   const date = $('rs-date').value || new Date().toISOString().split('T')[0];
   const holes = (course.holes||[]).slice(0,selectedHoles).map((h,i)=>({holeNum:i+1,par:h.par||4,si:h.si||i+1,dist:h.dist||0}));
-  const playersFull = players.map(p=>({...p,hcpIndex:parseFloat(p.hcpIndex),courseHcp:calcCHcp(parseFloat(p.hcpIndex),td.sr,td.cr,td.par)}));
+  const playersFull = players.map(p=>{
+    const chcp18 = calcCHcp(parseFloat(p.hcpIndex),td.sr,td.cr,td.par);
+    // For 9-hole rounds: use full course HCP (WHS: same HCP, just fewer holes)
+    // But distribute strokes based on which 9 holes are played
+    return {...p,hcpIndex:parseFloat(p.hcpIndex),courseHcp:chcp18};
+  });
   const scores = {};
   playersFull.forEach(p=>{scores[p.id]=holes.map(h=>({holeNum:h.holeNum,par:h.par,si:h.si,gross:0,fairway:null,gir:null,putts:null,bunker:false,sandSave:null,ob:0}));});
   activeRound = {id:genId(),date,courseId:course.id,courseName:course.name,teeType:selectedTee,numHoles:selectedHoles,cr:td.cr,sr:td.sr,par:td.par,players:playersFull,scores};
@@ -782,8 +787,12 @@ function renderHoleCard() {
         ${hole.gross?`<div class="muted" style="text-align:center;font-size:11px;margin-top:4px;">${hole.gross<hole.par?'-'+(hole.par-hole.gross):hole.gross===hole.par?'Par':'+'+(hole.gross-hole.par)}</div>`:''}
       </div>
       <div id="hole-stats">
-        ${hole.par!==3?`<div class="row"><span class="muted">Fairway getroffen?</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">✓ Ja</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">✗ Nein</button></div></div>`:''}
-        <div class="row"><span class="muted">GIR?</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">✓ Ja</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">✗ Nein</button></div></div>
+        ${hole.par!==3?`
+          <div class="row"><span class="muted">Fairway getroffen?</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">✓ Ja</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">✗ Nein</button></div></div>
+          ${hole.fairway===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${['Links','Rechts','Bunker','Zu lang','Zu kurz'].map(m=>`<button class="tog${hole.fairwayMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('fairwayMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
+        `:''}
+        <div class="row"><span class="muted">GIR (Grün in Regulation)?</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">✓ Ja</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">✗ Nein</button></div></div>
+        ${hole.gir===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${['Links','Rechts','Bunker','Zu lang','Zu kurz','Chip daneben'].map(m=>`<button class="tog${hole.girMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('girMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
         <div class="row"><span class="muted">Putts</span><div style="display:flex;gap:5px;">${[0,1,2,3,4].map(n=>`<button class="hole-btn${hole.putts===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('putts',${n})">${n}</button>`).join('')}</div></div>
         <div class="row"><span class="muted">Bunker?</span><div><button class="tog${hole.bunker===true?' on':''}" onclick="setHoleStat('bunker',true)">✓ Ja</button> <button class="tog${hole.bunker===false?' no':''}" onclick="setHoleStat('bunker',false)">✗ Nein</button></div></div>
         ${hole.bunker?`<div class="row"><span class="muted">Sand Save?</span><div><button class="tog${hole.sandSave===true?' on':''}" onclick="setHoleStat('sandSave',true)">✓ Ja</button> <button class="tog${hole.sandSave===false?' no':''}" onclick="setHoleStat('sandSave',false)">✗ Nein</button></div></div>`:''}
@@ -872,18 +881,61 @@ function renderStatSection(id) {
         ].map(([l,v,c,z])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">${z}</div></div></div>`).join('')}
       </div>
       <div class="card" style="margin-top:10px;">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">📈 Trend (letzte Runden)</div>
+        ${(()=>{
+          if(norm.length<2) return '<div class="muted" style="font-size:12px;padding:8px 0;">Mindestens 2 Runden für Trends nötig.</div>';
+          const trendData = norm.slice().reverse().map(r=>{
+            const sc = (r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]));
+            const fwA=sc.filter(h=>h.par!==3&&h.fairway!==null); const fw=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):null;
+            const girA=sc.filter(h=>h.gir!==null); const gir=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):null;
+            const puttA=sc.filter(h=>h.putts!=null); const putts=puttA.length?parseFloat((puttA.reduce((s,h)=>s+h.putts,0)/puttA.length).toFixed(1)):null;
+            const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
+            return{date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),fw,gir,putts,netto:t.nettoStableford||0};
+          });
+          const svgLine=(data,key,color,minV,maxV,h=60)=>{
+            const pts=data.filter(d=>d[key]!==null);
+            if(pts.length<2) return '';
+            const W=300,H=h,PL=28,PR=8,PT=6,PB=20;
+            const mn=minV!==undefined?minV:Math.min(...pts.map(d=>d[key]));
+            const mx=maxV!==undefined?maxV:Math.max(...pts.map(d=>d[key]));
+            const rng=mx-mn||1;
+            const x=i=>PL+(i/(pts.length-1))*(W-PL-PR);
+            const y=v=>PT+(1-(v-mn)/rng)*(H-PT-PB);
+            const polyline=pts.map((d,i)=>`${x(i)},${y(d[key])}`).join(' ');
+            return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="overflow:visible;">
+              <line x1="${PL}" x2="${W-PR}" y1="${PT+(H-PT-PB)/2}" y2="${PT+(H-PT-PB)/2}" stroke="#2d4d38" stroke-dasharray="3"/>
+              <polyline points="${polyline}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+              ${pts.map((d,i)=>`<circle cx="${x(i)}" cy="${y(d[key])}" r="3" fill="${color}"/><text x="${x(i)}" y="${H}" text-anchor="middle" fill="#6b9e7a" font-size="9">${d.date}</text>`).join('')}
+              <text x="${PL-2}" y="${PT+8}" text-anchor="end" fill="#6b9e7a" font-size="9">${mx}${key==='putts'?'':''}</text>
+              <text x="${PL-2}" y="${H-PB}" text-anchor="end" fill="#6b9e7a" font-size="9">${mn}</text>
+            </svg>`;
+          };
+          return [
+            ['Netto Stableford',svgLine(trendData,'netto','#4ade80')],
+            ['Fairway % (Ziel: 60%)',svgLine(trendData,'fw','#fbbf24',0,100)],
+            ['GIR % (Ziel: 50%)',svgLine(trendData,'gir','#60a5fa',0,100)],
+            ['Ø Putts/Loch (Ziel: 2.0)',svgLine(trendData,'putts','#f87171',1,3)],
+          ].filter(([,svg])=>svg).map(([label,svg])=>`
+            <div style="margin-bottom:14px;">
+              <div style="font-size:11px;color:#6b9e7a;font-weight:600;margin-bottom:4px;">${label}</div>
+              ${svg}
+            </div>`).join('');
+        })()}
+      </div>
+      <div class="card" style="margin-top:10px;">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Alle Runden</div>
         ${norm.map(r=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return`
-          <div class="row" style="align-items:center;">
+          <div class="row" style="align-items:center;cursor:pointer;" onclick="showRoundDetail('${r.id}')">
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:600;">${r.courseName}</div>
               <div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · ${r.numHoles}L · ${teeChip(r.teeType)}</div>
+              <div style="font-size:10px;color:#4ade8088;margin-top:2px;">👆 Tippen für Details</div>
             </div>
             <div style="text-align:right;margin-right:10px;">
               <div style="font-size:17px;font-weight:700;color:#4ade80;">${t.nettoStableford||0} Pkt.</div>
-              <div class="muted" style="font-size:10px;">Brutto: ${t.bruttoScore||0}</div>
+              <div class="muted" style="font-size:10px;">${t.bruttoStableford||0} Brutto Pkt. · ${t.bruttoScore||0} Schl.</div>
             </div>
-            <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="deleteRound('${r.id}')">🗑</button>
+            <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="event.stopPropagation();deleteRound('${r.id}')">🗑</button>
           </div>`;}).join('')}
       </div>`;
   }
@@ -940,7 +992,11 @@ function renderStatSection(id) {
     const calcDiff = r => {
       const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
       if(!t.bruttoScore||!r.cr||!r.sr) return null;
-      return parseFloat(((t.bruttoScore-r.cr)*113/r.sr).toFixed(1));
+      const is9 = (r.numHoles||18) <= 9;
+      // WHS: für 9-Loch Runden halbe CR verwenden, dann ×2 für 18-Loch-Äquivalent
+      const crAdj = is9 ? r.cr/2 : r.cr;
+      const diff = (t.bruttoScore - crAdj) * 113 / r.sr;
+      return parseFloat((is9 ? diff*2 : diff).toFixed(1));
     };
     const withDiff = norm.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
     if(!withDiff.length){$('stat-sim').innerHTML='<div class="card muted" style="text-align:center;padding:20px;">Keine auswertbaren Runden (Brutto-Score benötigt).</div>';return;}
@@ -956,6 +1012,7 @@ function renderStatSection(id) {
           <div class="stat-box"><div class="big-num">${curHcp!==null?curHcp.toFixed(1):'—'}</div><div class="muted" style="font-size:10px;">Berechnet</div></div>
         </div>
         <div class="muted" style="font-size:11px;text-align:center;">Beste ${best8.length} von ${withDiff.length} Runden · × 0.96</div>
+        ${withDiff.some(r=>(r.numHoles||18)<=9)?'<div style="font-size:10px;color:#fbbf24;text-align:center;margin-top:4px;">⚠️ 9-Loch Runden als 18-Loch-Äquivalent berechnet</div>':''}
       </div>
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Score Differentials</div>
@@ -1008,6 +1065,101 @@ async function renderServiceHistory() {
       ${m.reply ? `<div style="background:#22c55e11;border-left:3px solid #4ade80;padding:8px;border-radius:0 8px 8px 0;margin-top:6px;font-size:12px;"><span style="color:#4ade80;font-weight:600;">Admin:</span> ${m.reply}</div>` : ''}
       <div class="muted" style="font-size:10px;margin-top:4px;">${new Date(m.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`).join('');
+}
+
+// ── ROUND DETAIL ──
+function showRoundDetail(roundId) {
+  const r = rounds.find(x=>x.id===roundId);
+  if (!r) return;
+  const norm = {...r, courseName:r.course_name||r.courseName, teeType:r.tee_type||r.teeType, numHoles:r.num_holes||r.numHoles||18, players:r.players||[], scores:r.scores||{}, totals:r.totals||{}};
+  const players = norm.players;
+
+  const holeTable = (player) => {
+    const sc = norm.scores?.[player.id] || [];
+    if (!sc.length) return '<div class="muted" style="padding:10px;">Keine Loch-Daten.</div>';
+    const chcp = player.courseHcp;
+    const rows = sc.map(h => {
+      const st = strokesOnHole(chcp, h.si);
+      const netPts = sfNet(h.gross, h.par, st);
+      const brutPts = sfBrut(h.gross, h.par);
+      const scoreColor = !h.gross?'#6b9e7a':h.gross<=h.par-2?'#4ade80':h.gross===h.par-1?'#a3e635':h.gross===h.par?'#ecfdf5':h.gross===h.par+1?'#fbbf24':'#f87171';
+      const missInfo = [];
+      if (h.fairway===false && h.fairwayMiss) missInfo.push('<span style="font-size:9px;color:#fbbf24;">⚠️'+h.fairwayMiss+'</span>');
+      if (h.gir===false && h.girMiss) missInfo.push('<span style="font-size:9px;color:#fbbf24;">⚠️'+h.girMiss+'</span>');
+      return `<tr style="border-bottom:1px solid #173320;">
+        <td style="padding:6px 4px;text-align:center;font-weight:600;">${h.holeNum}</td>
+        <td style="padding:6px 4px;text-align:center;color:#6b9e7a;">${h.par}</td>
+        <td style="padding:6px 4px;text-align:center;font-size:16px;font-weight:700;color:${scoreColor};">${h.gross||'—'}</td>
+        <td style="padding:6px 4px;text-align:center;">${brutPts}</td>
+        <td style="padding:6px 4px;text-align:center;color:#4ade80;font-weight:600;">${netPts}</td>
+        <td style="padding:6px 4px;text-align:center;">${h.fairway===true?'✓':h.fairway===false?'✗':'—'}</td>
+        <td style="padding:6px 4px;text-align:center;">${h.gir===true?'✓':h.gir===false?'✗':'—'}</td>
+        <td style="padding:6px 4px;text-align:center;">${h.putts!==null&&h.putts!==undefined?h.putts:'—'}</td>
+        <td style="padding:6px 4px;text-align:center;">${h.bunker?'⛱':'—'}</td>
+        <td style="padding:6px 4px;text-align:center;">${h.ob?'+'+h.ob:'—'}</td>
+      </tr>
+      ${missInfo.length?`<tr><td colspan="10" style="padding:0 4px 6px;font-size:9px;">${missInfo.join(' ')}</td></tr>`:''}`;
+    }).join('');
+    const t = norm.totals?.[player.id]||{};
+    return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:340px;">
+        <thead>
+          <tr style="border-bottom:1px solid #4ade80;">
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Loch</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Par</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Score</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Brut.</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Net.</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">FW</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">GIR</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Putts</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">Bun.</th>
+            <th style="padding:6px 4px;color:#4ade80;font-size:10px;">OB</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr style="border-top:1px solid #4ade80;font-weight:700;">
+            <td colspan="2" style="padding:6px 4px;color:#6b9e7a;">Total</td>
+            <td style="padding:6px 4px;text-align:center;">${t.bruttoScore||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${t.bruttoStableford||0}</td>
+            <td style="padding:6px 4px;text-align:center;color:#4ade80;">${t.nettoStableford||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${t.fairways||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${t.gir||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${t.putts||0}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
+  };
+
+  const modal = document.createElement('div');
+  modal.id = 'round-detail-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;overflow-y:auto;padding:16px;';
+  modal.innerHTML = `
+    <div style="background:#0b1e10;border:1px solid #173320;border-radius:16px;padding:20px;max-width:500px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-size:17px;font-weight:700;">${norm.courseName}</div>
+          <div class="muted">${new Date(norm.date).toLocaleDateString('de-DE')} · ${norm.numHoles}L · ${teeChip(norm.teeType)}</div>
+        </div>
+        <button class="btn btn-dark btn-sm" onclick="document.getElementById('round-detail-modal').remove()">✕ Schließen</button>
+      </div>
+      ${players.map(p => {
+        const t = norm.totals?.[p.id]||{};
+        return `<div style="margin-bottom:16px;">
+          ${players.length>1?`<div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">👤 ${p.name} · HCP ${parseFloat(p.hcpIndex).toFixed(1)} · Platz-HCP ${p.courseHcp}</div>`:''}
+          <div class="grid3" style="margin-bottom:10px;">
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:9px;">Netto Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoStableford||0}</div><div class="muted" style="font-size:9px;">Brutto Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoScore||0}</div><div class="muted" style="font-size:9px;">Schläge</div></div>
+          </div>
+          ${holeTable(p)}
+        </div>`;
+      }).join('')}
+    </div>`;
+  document.body.appendChild(modal);
 }
 
 // ── DELETE ROUND ──
