@@ -252,6 +252,24 @@ const SUPABASE_URL = "https://dcpijdxzwbseoirhizki.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjcGlqZHh6d2JzZW9pcmhpemtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTMxNzksImV4cCI6MjA5NTg2OTE3OX0.8XYSmuUfXR-A4-dTEwL4FJFIVp2Ct4buXDIJx_Zs0o8";
 // ═══════════════════════════════════════════
 
+const APP_VERSION = "1.3";
+const CHANGELOG = {
+  "1.3": {
+    title: "Was ist neu in v1.3?",
+    date: "Juni 2026",
+    changes: [
+      "👆 Runde antippen für komplette Loch-Details",
+      "🎯 Fehlrichtung bei Fairway & GIR (links/rechts/Bunker)",
+      "📈 Trendkurven in der Analyse (Fairway, GIR, Putts)",
+      "🧮 HCP-Simulation für 9-Loch-Runden korrigiert",
+      "🗑️ Eigene Runden löschen",
+      "💬 Service-Bereich für Nachrichten an Admin",
+      "✏️ Plätze vollständig bearbeiten (CR / SR / Par)",
+      "🛡️ Admin: Spieler / Plätze / Runden Übersicht"
+    ]
+  }
+};
+
 const TEE = {
   yellow:{label:"Gelb",bg:"#fbbf24",fg:"#0f172a"},
   green: {label:"Grün",bg:"#4ade80",fg:"#0f172a"},
@@ -366,6 +384,8 @@ async function loginUser(u) {
   document.getElementById('main-nav').style.display = 'flex';
   if (currentProfile?.is_admin) $('nav-admin').style.display = '';
   showPage('pg-home');
+  // Show changelog if new version
+  setTimeout(checkVersion, 800);
 }
 
 async function logout() {
@@ -1016,7 +1036,41 @@ function renderStatSection(id) {
       </div>
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Score Differentials</div>
-        ${withDiff.map((r,i)=>{const t=r.totals?.[r.players?.[0]?.id]||{};const isBest=allDiffs.indexOf(r.diff)<8;return`<div class="row"><div><div style="font-size:13px;font-weight:600;">${r.courseName}</div><div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · Brutto ${t.bruttoScore}</div></div><div style="text-align:right;"><div style="font-size:18px;font-weight:700;color:${isBest?'#4ade80':'#6b9e7a'};">${r.diff>0?'+'+r.diff:r.diff}</div>${isBest?'<div style="font-size:9px;color:#4ade80;">★ top 8</div>':''}</div></div>`;}).join('')}
+        ${withDiff.map((r,i)=>{
+  const t=r.totals?.[r.players?.[0]?.id]||{};
+  const isBest=allDiffs.indexOf(r.diff)<8;
+  const is9=(r.numHoles||18)<=9;
+  const par=r.par||(is9?36:72);
+  const overUnder=t.bruttoScore?(t.bruttoScore-par):null;
+  const overUnderStr=overUnder===null?'':overUnder>0?`+${overUnder}`:overUnder===0?'Par':overUnder;
+  return`<div style="padding:10px 0;border-bottom:1px solid #173320;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${r.courseName}</div>
+        <div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · ${r.numHoles||18}L · ${teeChip(r.teeType||r.tee_type||'yellow')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+          <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;">
+            🏌️ ${t.bruttoScore||'—'} Schl.
+          </span>
+          <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:${overUnder>0?'#f87171':overUnder<0?'#4ade80':'#ecfdf5'};">
+            ${overUnderStr} zum Par
+          </span>
+          <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;">
+            ${t.bruttoStableford||0} Brutto Pkt.
+          </span>
+          <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:#4ade80;">
+            ${t.nettoStableford||0} Netto Pkt.
+          </span>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:10px;">
+        <div style="font-size:22px;font-weight:700;color:${isBest?'#4ade80':'#6b9e7a'};">${r.diff>0?'+'+r.diff:r.diff}</div>
+        <div style="font-size:9px;color:#6b9e7a;">Differential</div>
+        ${isBest?'<div style="font-size:9px;color:#4ade80;font-weight:600;">★ top 8</div>':''}
+        ${is9?'<div style="font-size:9px;color:#fbbf24;">9L</div>':''}
+      </div>
+    </div>
+  </div>`;}).join('')}
       </div>`;
   }
 }
@@ -1162,6 +1216,44 @@ function showRoundDetail(roundId) {
   document.body.appendChild(modal);
 }
 
+// ── CHANGELOG ──
+function checkVersion() {
+  const seen = localStorage.getItem('gf_version_seen');
+  if (seen === APP_VERSION) return; // Already seen this version
+  showChangelog();
+}
+
+function showChangelog() {
+  const log = CHANGELOG[APP_VERSION];
+  if (!log) return;
+  const modal = document.createElement('div');
+  modal.id = 'changelog-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:#0b1e10;border:1px solid #4ade80;border-radius:16px;padding:24px;width:100%;max-width:420px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div style="font-size:11px;color:#4ade80;font-weight:600;letter-spacing:1px;">GOLFTRACKER v${APP_VERSION}</div>
+        <div style="font-size:11px;color:#6b9e7a;">${log.date}</div>
+      </div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:16px;">${log.title}</div>
+      <div style="display:grid;gap:8px;margin-bottom:20px;">
+        ${log.changes.map(c=>`
+          <div style="display:flex;gap:10px;align-items:flex-start;background:#060e08;border-radius:8px;padding:10px 12px;">
+            <span style="font-size:16px;flex-shrink:0;">${c.split(' ')[0]}</span>
+            <span style="font-size:13px;color:#ecfdf5;line-height:1.4;">${c.slice(c.indexOf(' ')+1)}</span>
+          </div>`).join('')}
+      </div>
+      <button class="btn btn-green" onclick="dismissChangelog()">✓ Verstanden — los geht's!</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function dismissChangelog() {
+  localStorage.setItem('gf_version_seen', APP_VERSION);
+  const modal = document.getElementById('changelog-modal');
+  if (modal) modal.remove();
+}
+
 // ── DELETE ROUND ──
 async function deleteRound(id) {
   if (!confirm('Diese Runde wirklich löschen? Das kann nicht rückgängig gemacht werden.')) return;
@@ -1189,9 +1281,9 @@ async function renderAdmin() {
 
   $('admin-content').innerHTML = `
     <div class="grid3" style="margin-bottom:16px;">
-      <div class="stat-box"><div class="big-num">${users.length}</div><div class="muted" style="font-size:10px;">Spieler</div></div>
-      <div class="stat-box"><div class="big-num">${allRounds.length}</div><div class="muted" style="font-size:10px;">Runden</div></div>
-      <div class="stat-box"><div class="big-num">${avg}</div><div class="muted" style="font-size:10px;">⌀ Netto</div></div>
+      <div class="stat-box"><div class="big-num">${users.length}</div><div class="muted" style="font-size:10px;">👥 Spieler</div></div>
+      <div class="stat-box"><div class="big-num">${courses.length}</div><div class="muted" style="font-size:10px;">🗺️ Plätze</div></div>
+      <div class="stat-box"><div class="big-num">${allRounds.length}</div><div class="muted" style="font-size:10px;">⛳ Runden</div></div>
     </div>
     <h3 style="margin-bottom:10px;">Alle Spieler</h3>
     ${users.map(u=>{
