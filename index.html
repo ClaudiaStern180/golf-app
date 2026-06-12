@@ -63,23 +63,28 @@
 
 <!-- AUTH PAGE -->
 <div id="pg-auth" class="page active" style="max-width:480px;margin:0 auto;padding:20px;">
-  <div style="text-align:center;margin:40px 0 28px;">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:6px;">
+    <button onclick="setLang('de')" id="auth-lang-de" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">DE</button>
+    <button onclick="setLang('en')" id="auth-lang-en" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">EN</button>
+    <button onclick="setLang('it')" id="auth-lang-it" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">IT</button>
+  </div>
+  <div style="text-align:center;margin:20px 0 28px;">
     <div style="font-size:52px">⛳</div>
     <h1 style="margin-top:8px;">Golf<span class="accent">Tracker</span></h1>
-    <p class="muted" style="margin-top:4px;">Dein persönlicher Golf-Assistent</p>
+    <p class="muted" id="auth-tagline" style="margin-top:4px;">Dein persönlicher Golf-Assistent</p>
   </div>
   <div class="card" style="padding:24px;">
     <div style="display:flex;gap:8px;margin-bottom:20px;">
-      <button class="btn btn-green btn-sm" id="tab-login" onclick="authTab('login')" style="flex:1">Einloggen</button>
-      <button class="btn btn-dark btn-sm" id="tab-reg" onclick="authTab('reg')" style="flex:1">Registrieren</button>
+      <button class="btn btn-green btn-sm" id="tab-login" onclick="authTab('login')" style="flex:1" id="tab-login-btn">Einloggen</button>
+      <button class="btn btn-dark btn-sm" id="tab-reg" onclick="authTab('reg')" style="flex:1" id="tab-reg-btn">Registrieren</button>
     </div>
     <div id="reg-fields">
-      <label class="label">Name</label>
+      <label class="label" id="auth-lbl-name">Name</label>
       <input id="auth-name" placeholder="Vorname Nachname"/>
     </div>
     <label class="label">E-Mail</label>
     <input id="auth-email" type="email" placeholder="deine@email.de"/>
-    <label class="label">PIN (min. 4 Zeichen)</label>
+    <label class="label" id="auth-lbl-pin">PIN (min. 4 Zeichen)</label>
     <input id="auth-pin" type="password" placeholder="••••••"/>
     <div id="auth-err"></div>
     <button class="btn btn-green" onclick="authSubmit()" style="margin-top:16px;" id="auth-btn">Einloggen →</button>
@@ -95,9 +100,9 @@
     </div>
     <div style="text-align:right;">
       <div style="display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px;">
-        <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇩🇪</button>
-        <button onclick="setLang('en')" id="lang-en" title="English" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇬🇧</button>
-        <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇮🇹</button>
+        <button onclick="setLang('de')" id="lang-de" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">DE</button>
+        <button onclick="setLang('en')" id="lang-en" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">EN</button>
+        <button onclick="setLang('it')" id="lang-it" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">IT</button>
       </div>
       <div class="muted" style="font-size:10px;margin-bottom:2px;">HCP Index</div>
       <div id="home-hcp" class="big-num" style="cursor:pointer;background:#22c55e22;border:1px solid #4ade80;border-radius:10px;padding:4px 14px;" onclick="editHcp()">18.0</div>
@@ -114,15 +119,15 @@
     <div class="stat-box"><div class="big-num" id="stat-best-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-best-brutto">Beste Brutto</div></div>
   </div>
   <div id="home-last-round"></div>
-  <button class="btn btn-green" onclick="showPage('pg-round')">⛳ Neue Runde starten</button>
+  <button class="btn btn-green" id="home-new-round-btn" onclick="showPage('pg-round')">⛳ Neue Runde starten</button>
 </div>
 
 <!-- COURSES PAGE -->
 <div id="pg-courses" class="page">
   <h2 id="courses-h2">Plätze</h2>
   <div id="courses-list"></div>
-  <div style="font-size:11px;color:#6b9e7a;text-align:center;margin:10px 0;padding:8px;background:#2d4d38;border-radius:8px;">🌐 Alle Plätze sind für alle Spieler sichtbar</div>
-  <button class="btn btn-dark" onclick="showAddCourse()">✍️ Platz hinzufügen</button>
+  <div style="font-size:11px;color:#6b9e7a;text-align:center;margin:10px 0;padding:8px;background:#2d4d38;border-radius:8px;"><span id="courses-shared-lbl">🌐 Alle Plätze sind für alle Spieler sichtbar</span></div>
+  <button class="btn btn-dark" id="btn-add-course" onclick="showAddCourse()">✍️ Platz hinzufügen</button>
   <div id="add-course-form" style="display:none;margin-top:12px;" class="card">
     <h3>Neuer Platz</h3>
     <label class="label">Platzname</label>
@@ -224,10 +229,10 @@
 <div id="pg-stats" class="page">
   <h2 id="stats-h2">Analyse</h2>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="tog on" onclick="showStat('verlauf',this)" id="stab-verlauf">📋 Verlauf</button>
+    <button class="tog on" onclick="showStat('verlauf',this)" id="stab-verlauf">📋 <span id="tab-verlauf-lbl">Verlauf</span></button>
     <button class="tog" onclick="showStat('trend',this)" id="stab-trend">📈 Trend</button>
     <button class="tog" onclick="showStat('radar',this)" id="stab-radar">🎯 Radar</button>
-    <button class="tog" onclick="showStat('tips',this)" id="stab-tips">💡 Tipps</button>
+    <button class="tog" onclick="showStat('tips',this)" id="stab-tips">💡 <span id="tab-tips-lbl">Tipps</span></button>
     <button class="tog" onclick="showStat('sim',this)" id="stab-sim">🧮 HCP-Sim</button>
   </div>
   <div id="stat-verlauf"></div>
@@ -248,7 +253,7 @@
   <h2 id="svc-h2">💬 Service</h2>
   <div class="card" style="margin-bottom:12px;">
     <div style="font-size:13px;color:#6b9e7a;line-height:1.6;">
-      Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.
+      <span id="svc-intro-text">Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.</span>
     </div>
   </div>
   <div class="card">
@@ -263,7 +268,7 @@
     <label class="label" style="margin-top:10px;">Nachricht</label>
     <textarea id="svc-message" placeholder="Deine Nachricht an den Admin…" style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;min-height:120px;resize:vertical;font-family:inherit;margin-top:4px;"></textarea>
     <div id="svc-result"></div>
-    <button class="btn btn-green" onclick="sendServiceMessage()" style="margin-top:12px;">📨 Nachricht senden</button>
+    <button class="btn btn-green" id="svc-send-btn" onclick="sendServiceMessage()" style="margin-top:12px;">📨 Nachricht senden</button>
   </div>
 
   <div class="card" style="margin-top:12px;" id="svc-history">
@@ -274,17 +279,17 @@
 
 <!-- LANG BAR: fixed top-right, visible after login -->
 <div id="lang-bar" style="display:none;position:fixed;top:10px;right:12px;z-index:300;display:none;gap:3px;flex-direction:row;">
-  <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇩🇪</button>
-  <button onclick="setLang('en')" id="lang-en" title="English" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇬🇧</button>
-  <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇮🇹</button>
+  <button onclick="setLang('de')" id="lang-de2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">DE</button>
+  <button onclick="setLang('en')" id="lang-en2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">EN</button>
+  <button onclick="setLang('it')" id="lang-it2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">IT</button>
 </div>
 
 <nav id="main-nav" style="display:none;">
-  <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span>Home</button>
-  <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span>Plätze</button>
-  <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span>Runde</button>
-  <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span>Stats</button>
-  <button onclick="showPage('pg-service')" id="nav-service"><span>💬</span>Service</button>
+  <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span><span id="nav-lbl-home">Home</span></button>
+  <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span><span id="nav-lbl-courses">Plätze</span></button>
+  <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span><span id="nav-lbl-round">Runde</span></button>
+  <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span><span id="nav-lbl-stats">Stats</span></button>
+  <button onclick="showPage('pg-service')" id="nav-service"><span>💬</span><span id="nav-lbl-service">Service</span></button>
   <button onclick="showPage('pg-admin')" id="nav-admin" style="display:none;"><span>🛡️</span>Admin</button>
   <button onclick="logout()"><span>👤</span>Logout</button>
 </nav>
@@ -374,7 +379,7 @@ const LANG = {
     admin_title:'🛡️ Admin',admin_players:'👥 Spieler',admin_courses:'🗺️ Plätze',admin_rounds:'⛳ Runden',
     all_players:'Alle Spieler',last_rounds:'Letzte Runden',
     service_title:'💬 Service',
-    service_intro:'Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.',
+    service_intro:'<span id="svc-intro-text">Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.</span>',
     service_subject:'Betreff',service_msg:'Nachricht',service_send:'📨 Nachricht senden',
     service_sent:'✅ Nachricht gesendet! Der Admin wird sich melden.',
     service_history:'Meine gesendeten Nachrichten',service_empty:'Noch keine Nachrichten gesendet.',
@@ -518,10 +523,53 @@ const LANG = {
 };
 function t(k){return LANG[currentLang]?.[k]??LANG.de[k]??k;}
 function updateLangBar() {
+  // text buttons — all instances
   ['de','en','it'].forEach(l => {
-    const b = $('lang-'+l);
-    if (b) b.style.borderColor = l===currentLang ? '#4ade80' : '#2d4d38';
+    ['lang-'+l, 'lang-'+l+'2', 'auth-lang-'+l].forEach(id => {
+      const b = $(id);
+      if (b) b.style.cssText += ';border-color:' + (l===currentLang ? '#4ade80' : '#2d4d38') + ';color:' + (l===currentLang ? '#4ade80' : '#ecfdf5');
+    });
   });
+  applyI18nToDOM();
+}
+function applyI18nToDOM() {
+  // Auth page
+  const tagline = $('auth-tagline'); if(tagline) tagline.textContent = t('tagline');
+  const tabLogin = $('tab-login'); if(tabLogin) tabLogin.textContent = t('login');
+  const tabReg = $('tab-reg'); if(tabReg) tabReg.textContent = t('register');
+  const authBtn = $('auth-btn'); if(authBtn) authBtn.textContent = authMode==='login' ? t('btn_login') : t('btn_register');
+  const lblName = $('auth-lbl-name'); if(lblName) lblName.textContent = t('name');
+  const lblPin = $('auth-lbl-pin'); if(lblPin) lblPin.textContent = t('pin');
+  // Nav
+  const nl = {home:'nav_home',courses:'nav_courses',round:'nav_round',stats:'nav_stats',service:'nav_service'};
+  Object.entries(nl).forEach(([k,v])=>{ const el=$('nav-lbl-'+k); if(el) el.textContent=t(v); });
+  // Home
+  const nrb = $('home-new-round-btn'); if(nrb) nrb.textContent = '⛳ ' + t('new_round');
+  // Courses
+  const ch2 = $('courses-h2'); if(ch2) ch2.textContent = t('courses_title');
+  const csl = $('courses-shared-lbl'); if(csl) csl.textContent = '🌐 ' + t('all_shared');
+  const bac = $('btn-add-course'); if(bac) bac.textContent = '✍️ ' + t('add_course');
+  // Stats tabs
+  const tvl = $('tab-verlauf-lbl'); if(tvl) tvl.textContent = t('verlauf').replace('📋 ','');
+  const ttl = $('tab-tips-lbl'); if(ttl) ttl.textContent = t('tips_tab').replace('💡 ','');
+  const sh2 = $('stats-h2'); if(sh2) sh2.textContent = t('analysis')||'Analyse';
+  // Service
+  const si = $('svc-intro-text'); if(si) si.textContent = t('service_intro');
+  const sh = $('svc-h2'); if(sh) sh.textContent = t('service_title');
+  const sb2 = $('svc-send-btn'); if(sb2) sb2.textContent = '📨 ' + t('service_send').replace('📨 ','');
+  // Service subject options
+  const svcSel = $('svc-subject');
+  if(svcSel) svcSel.innerHTML = `
+    <option value="Vorschlag">${t('s1')}</option>
+    <option value="Problem">${t('s2')}</option>
+    <option value="Frage">${t('s3')}</option>
+    <option value="Platz fehlt">${t('s4')}</option>
+    <option value="Sonstiges">${t('s5')}</option>`;
+  // Round page labels
+  const rpt = $('round-page-title'); if(rpt && rpt.textContent !== 'Aktive Runde') rpt.textContent = t('round_title');
+  // Hole buttons
+  const b9 = $('btn-9'); if(b9) b9.textContent = t('h9');
+  const b18 = $('btn-18'); if(b18) b18.textContent = t('h18');
 }
 function setLang(lang){
   currentLang=lang;
@@ -530,6 +578,14 @@ function setLang(lang){
   const active=document.querySelector('.page.active')?.id;
   if(active) showPage(active);
   renderAuthPage();
+}
+function renderAuthPage() {
+  applyI18nToDOM();
+  // also update auth-lang buttons highlight
+  ['de','en','it'].forEach(l => {
+    const b = $('auth-lang-'+l);
+    if(b) { b.style.borderColor = l===currentLang?'#4ade80':'#2d4d38'; b.style.color = l===currentLang?'#4ade80':'#ecfdf5'; }
+  });
 }
 
 const TEE = {
@@ -552,6 +608,8 @@ let activePlayerId = null;
 let editPlayersMode = false;
 
 // Init
+// Apply language to auth page immediately on load
+setTimeout(() => { if(typeof renderAuthPage==='function') renderAuthPage(); }, 0);
 try {
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   sb.auth.getSession().then(({data:{session}}) => {
