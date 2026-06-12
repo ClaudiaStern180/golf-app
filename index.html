@@ -94,6 +94,11 @@
       <p class="muted" id="home-greeting">Willkommen</p>
     </div>
     <div style="text-align:right;">
+      <div style="display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px;">
+        <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇩🇪</button>
+        <button onclick="setLang('en')" id="lang-en" title="English" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇬🇧</button>
+        <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;line-height:1;">🇮🇹</button>
+      </div>
       <div class="muted" style="font-size:10px;margin-bottom:2px;">HCP Index</div>
       <div id="home-hcp" class="big-num" style="cursor:pointer;background:#22c55e22;border:1px solid #4ade80;border-radius:10px;padding:4px 14px;" onclick="editHcp()">18.0</div>
     </div>
@@ -650,6 +655,11 @@ async function editHcp() {
 
 // ── HOME ──
 function renderHome() {
+  // highlight active language
+  ['de','en','it'].forEach(l => {
+    const b = $('lang-'+l);
+    if (b) b.style.borderColor = l===currentLang ? '#4ade80' : '#2d4d38';
+  });
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
   [['lbl-rounds','rounds'],['lbl-avg-netto','avg_netto'],['lbl-best-netto','best_netto'],
