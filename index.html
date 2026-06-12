@@ -662,6 +662,23 @@ function renderHome() {
   });
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
+  // ensure lang buttons exist (in case static HTML wasn't rendered)
+  if (!$('lang-de')) {
+    const hcpWrap = $('home-hcp')?.parentElement;
+    if (hcpWrap) {
+      const langBar = document.createElement('div');
+      langBar.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px;';
+      langBar.innerHTML = `
+        <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇩🇪</button>
+        <button onclick="setLang('en')" id="lang-en" title="English" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇬🇧</button>
+        <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇮🇹</button>`;
+      hcpWrap.insertBefore(langBar, hcpWrap.firstChild);
+    }
+  }
+  ['de','en','it'].forEach(l => {
+    const b = $('lang-'+l);
+    if (b) b.style.borderColor = l===currentLang ? '#4ade80' : '#2d4d38';
+  });
   [['lbl-rounds','rounds'],['lbl-avg-netto','avg_netto'],['lbl-best-netto','best_netto'],
    ['lbl-avg-brutto','avg_brutto'],['lbl-best-brutto','best_brutto']].forEach(([id,key])=>{
     const el=document.getElementById(id); if(el) el.textContent=t(key);
