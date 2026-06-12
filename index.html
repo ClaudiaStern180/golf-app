@@ -776,7 +776,7 @@ function renderHome() {
 
   const last = rounds[0];
   if (last) {
-    const p0 = last.players?.[0]; const t = last.totals?.[p0?.id]||{};
+    const p0 = last.players?.[0]; const tot = last.totals?.[p0?.id]||{};
     $('home-last-round').innerHTML = `
       <div class="card" style="margin-bottom:12px;cursor:pointer;" onclick="showRoundDetail('${last.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -791,10 +791,10 @@ function renderHome() {
           </div>
           <div style="text-align:right;">
             <div style="display:flex;gap:12px;align-items:baseline;justify-content:flex-end;">
-              <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num">${t.nettoStableford||'—'}</div></div>
-              <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:20px;font-weight:700;color:#fb923c;">${t.bruttoStableford||'—'}</div></div>
+              <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num">${tot.nettoStableford||'—'}</div></div>
+              <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:20px;font-weight:700;color:#fb923c;">${tot.bruttoStableford||'—'}</div></div>
             </div>
-            <div class="muted" style="font-size:10px;margin-top:2px;">${t.bruttoScore||'—'} Schläge</div>
+            <div class="muted" style="font-size:10px;margin-top:2px;">${tot.bruttoScore||'—'} Schläge</div>
           </div>
         </div>
       </div>`;
@@ -1407,7 +1407,7 @@ function renderStatSection(id) {
   if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">'+t('no_data')+'</p></div>'; return; }
 
   if (id==='verlauf') {
-    const rows = norm.map((r,i)=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return{name:'R'+(i+1),date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),HCP:parseFloat(p?.hcpIndex||0),Netto:t.nettoStableford||0,Putts:t.putts||0};});
+    const rows = norm.map((r,i)=>{const p=r.players?.[0];const tot=r.totals?.[p?.id]||{};return{name:'R'+(i+1),date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),HCP:parseFloat(p?.hcpIndex||0),Netto:tot.nettoStableford||0,Putts:tot.putts||0};});
     const byPar=p=>allSc.filter(h=>h.par===p);
     const avgOver=arr=>arr.length?(arr.reduce((s,h)=>s+(h.gross||h.par),0)/arr.length-arr.reduce((s,h)=>s+h.par,0)/arr.length):0;
     const fwA=allSc.filter(h=>h.par!==3&&h.fairway!==null);const fwPct=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):0;
@@ -1426,7 +1426,7 @@ function renderStatSection(id) {
       </div>
 <div class="card" style="margin-top:10px;">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">${t('all_rounds')}</div>
-        ${norm.map(r=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return`
+        ${norm.map(r=>{const p=r.players?.[0];const tot=r.totals?.[p?.id]||{};return`
           <div class="row" style="align-items:center;cursor:pointer;" onclick="showRoundDetail('${r.id}')">
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:600;">${r.courseName}</div>
@@ -1435,12 +1435,12 @@ function renderStatSection(id) {
             </div>
             <div style="text-align:right;margin-right:10px;">
               <div style="font-size:16px;font-weight:700;">
-                <span style="color:#4ade80;">${t.nettoStableford||0}</span>
+                <span style="color:#4ade80;">${tot.nettoStableford||0}</span>
                 <span class="muted" style="font-size:12px;"> Netto · </span>
-                <span style="color:#fb923c;">${t.bruttoStableford||0}</span>
+                <span style="color:#fb923c;">${tot.bruttoStableford||0}</span>
                 <span class="muted" style="font-size:12px;"> Brutto</span>
               </div>
-              <div class="muted" style="font-size:10px;">${t.bruttoScore||0} ${t("strokes")}</div>
+              <div class="muted" style="font-size:10px;">${tot.bruttoScore||0} ${t("strokes")}</div>
             </div>
             <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="event.stopPropagation();deleteRound('${r.id}')">🗑</button>
           </div>`;}).join('')}
@@ -1513,12 +1513,12 @@ function renderStatSection(id) {
 
   if (id==='sim') {
     const calcDiff = r => {
-      const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-      if(!t.bruttoScore||!r.cr||!r.sr) return null;
+      const p=r.players?.[0]; const tot=r.totals?.[p?.id]||{};
+      if(!tot.bruttoScore||!r.cr||!r.sr) return null;
       const is9 = (r.numHoles||18) <= 9;
       // WHS: für 9-Loch Runden halbe CR verwenden, dann ×2 für 18-Loch-Äquivalent
       const crAdj = is9 ? r.cr/2 : r.cr;
-      const diff = (t.bruttoScore - crAdj) * 113 / r.sr;
+      const diff = (tot.bruttoScore - crAdj) * 113 / r.sr;
       return parseFloat((is9 ? diff*2 : diff).toFixed(1));
     };
     const withDiff = norm.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
@@ -1540,11 +1540,11 @@ function renderStatSection(id) {
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">${t('sim_diffs')}</div>
         ${withDiff.map((r,i)=>{
-  const t=r.totals?.[r.players?.[0]?.id]||{};
+  const tot=r.totals?.[r.players?.[0]?.id]||{};
   const isBest=allDiffs.indexOf(r.diff)<8;
   const is9=(r.numHoles||18)<=9;
   const par=r.par||(is9?36:72);
-  const overUnder=t.bruttoScore?(t.bruttoScore-par):null;
+  const overUnder=tot.bruttoScore?(tot.bruttoScore-par):null;
   const overUnderStr=overUnder===null?'':overUnder>0?`+${overUnder}`:overUnder===0?'Par':overUnder;
   return`<div style="padding:10px 0;border-bottom:1px solid #173320;">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -1553,16 +1553,16 @@ function renderStatSection(id) {
         <div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · ${r.numHoles||18}L · ${teeChip(r.teeType||r.tee_type||'yellow')}</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;">
-            🏌️ ${t.bruttoScore||'—'} Schl.
+            🏌️ ${tot.bruttoScore||'—'} Schl.
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:${overUnder>0?'#f87171':overUnder<0?'#4ade80':'#ecfdf5'};">
             ${overUnderStr} ${currentLang==='de'?'zum Par':currentLang==='it'?'al Par':'to Par'}
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;">
-            ${t.bruttoStableford||0} ${t('brutto_netto').split('/')[0].trim()} Pkt.
+            ${tot.bruttoStableford||0} ${t('brutto_netto').split('/')[0].trim()} Pkt.
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:#4ade80;">
-            ${t.nettoStableford||0} ${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.
+            ${tot.nettoStableford||0} ${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.
           </span>
         </div>
       </div>
@@ -1657,13 +1657,13 @@ function buildTrendCharts(norm, mode) {
     const fwA=sc.filter(h=>h.par!==3&&h.fairway!==null);
     const girA=sc.filter(h=>h.gir!==null);
     const puttA=sc.filter(h=>h.putts!=null);
-    const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
+    const p=r.players?.[0]; const tot=r.totals?.[p?.id]||{};
     return {
       fw:   fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):null,
       gir:  girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):null,
       putts:puttA.length?parseFloat((puttA.reduce((s,h)=>s+h.putts,0)/puttA.length).toFixed(1)):null,
-      netto:t.nettoStableford||0,
-      brutto:t.bruttoStableford||0,
+      netto:tot.nettoStableford||0,
+      brutto:tot.bruttoStableford||0,
     };
   };
 
@@ -1830,7 +1830,7 @@ function showRoundDetail(roundId) {
       </tr>
       ${missInfo.length?`<tr><td colspan="10" style="padding:0 4px 6px;font-size:9px;">${missInfo.join(' ')}</td></tr>`:''}`;
     }).join('');
-    const t = norm.totals?.[player.id]||{};
+    const tot = norm.totals?.[player.id]||{};
     return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
       <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:340px;">
         <thead>
@@ -1851,12 +1851,12 @@ function showRoundDetail(roundId) {
         <tfoot>
           <tr style="border-top:1px solid #4ade80;font-weight:700;">
             <td colspan="2" style="padding:6px 4px;color:#6b9e7a;">Total</td>
-            <td style="padding:6px 4px;text-align:center;">${t.bruttoScore||0}</td>
-            <td style="padding:6px 4px;text-align:center;">${t.bruttoStableford||0}</td>
-            <td style="padding:6px 4px;text-align:center;color:#4ade80;">${t.nettoStableford||0}</td>
-            <td style="padding:6px 4px;text-align:center;">${t.fairways||0}</td>
-            <td style="padding:6px 4px;text-align:center;">${t.gir||0}</td>
-            <td style="padding:6px 4px;text-align:center;">${t.putts||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${tot.bruttoScore||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${tot.bruttoStableford||0}</td>
+            <td style="padding:6px 4px;text-align:center;color:#4ade80;">${tot.nettoStableford||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${tot.fairways||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${tot.gir||0}</td>
+            <td style="padding:6px 4px;text-align:center;">${tot.putts||0}</td>
             <td colspan="2"></td>
           </tr>
         </tfoot>
@@ -1877,13 +1877,13 @@ function showRoundDetail(roundId) {
         <button class="btn btn-dark btn-sm" onclick="document.getElementById('round-detail-modal').remove()">✕ Schließen</button>
       </div>
       ${players.map(p => {
-        const t = norm.totals?.[p.id]||{};
+        const tot = norm.totals?.[p.id]||{};
         return `<div style="margin-bottom:16px;">
           ${players.length>1?`<div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">👤 ${p.name} · HCP ${parseFloat(p.hcpIndex).toFixed(1)} · ${t('course_hcp')} ${p.courseHcp}</div>`:''}
           <div class="grid3" style="margin-bottom:10px;">
-            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.</div></div>
-            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[0].trim()} Pkt.</div></div>
-            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoScore||0}</div><div class="muted" style="font-size:9px;">Schläge</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${tot.nettoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${tot.bruttoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[0].trim()} Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${tot.bruttoScore||0}</div><div class="muted" style="font-size:9px;">Schläge</div></div>
           </div>
           ${holeTable(p)}
         </div>`;
@@ -1978,14 +1978,14 @@ async function renderAdmin() {
     }).join('')}
     <h3 style="margin:16px 0 10px;">Letzte Runden</h3>
     ${allRounds.slice(0,20).map(r=>{
-      const p=r.players?.[0];const t=r.totals?.[p?.id]||{};const u=users.find(x=>x.id===r.user_id);
+      const p=r.players?.[0];const tot=r.totals?.[p?.id]||{};const u=users.find(x=>x.id===r.user_id);
       return`<div class="card" style="margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div><div style="font-weight:600;font-size:13px;">${r.course_name}</div><div class="muted" style="font-size:11px;">👤 ${u?.display_name||'?'} · ${new Date(r.date).toLocaleDateString('de-DE')}</div></div>
           <div style="text-align:right;">
               <div style="display:flex;gap:12px;align-items:baseline;justify-content:flex-end;">
-                <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div></div>
-                <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:18px;font-weight:700;color:#fb923c;">${t.bruttoStableford||0}</div></div>
+                <div><div style="font-size:11px;color:#6b9e7a;">Netto</div><div class="big-num" style="font-size:22px;">${tot.nettoStableford||0}</div></div>
+                <div><div style="font-size:11px;color:#6b9e7a;">Brutto</div><div style="font-size:18px;font-weight:700;color:#fb923c;">${tot.bruttoStableford||0}</div></div>
               </div>
             </div>
         </div>
