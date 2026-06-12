@@ -53,10 +53,6 @@
     .avatar{width:28px;height:28px;border-radius:50%;background:#2d4d38;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
     .avatar.sel{background:#4ade80;color:#000;}
     svg text{font-family:system-ui,sans-serif;}
-    #course-dropdown-list::-webkit-scrollbar{width:4px;}
-    #course-dropdown-list::-webkit-scrollbar-track{background:transparent;}
-    #course-dropdown-list::-webkit-scrollbar-thumb{background:#2d4d38;border-radius:4px;}
-    #course-selected-display:hover{border-color:#4ade80;}
   </style>
 </head>
 <body>
@@ -149,22 +145,7 @@
     <label class="label">📅 Datum</label>
     <input id="rs-date" type="date"/>
     <label class="label">⛳ Golfplatz</label>
-    <div id="course-dropdown-wrap" style="position:relative;">
-      <div id="course-selected-display" onclick="toggleCourseDropdown()"
-        style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:42px;">
-        <span id="course-selected-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Platz wählen…</span>
-        <span id="course-dropdown-arrow" style="margin-left:8px;font-size:11px;color:#6b9e7a;flex-shrink:0;">▼</span>
-      </div>
-      <div id="course-dropdown-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#0b1e10;border:1px solid #2d4d38;border-radius:12px;z-index:200;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-        <div style="padding:10px 10px 6px;">
-          <input id="course-search-input" type="text" placeholder="🔍 Suchen…" oninput="filterCourseDropdown()" onclick="event.stopPropagation()"
-            style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;outline:none;"/>
-        </div>
-        <div id="course-dropdown-list" style="max-height:260px;overflow-y:auto;padding:4px 6px 8px;"></div>
-      </div>
-    </div>
-    <!-- Hidden value carrier so existing code keeps working -->
-    <input type="hidden" id="rs-course" value=""/>
+    <select id="rs-course" onchange="updateTeeOptions()"></select>
     <label class="label">🔢 Löcher</label>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="tog on" id="btn-9" onclick="setHoles(9)">9 Löcher</button>
@@ -331,7 +312,8 @@ const LANG = {
     yes:'✓ Ja',no_btn:'✗ Nein',
     btn_save_round:'🏁 Speichern',btn_discard:'🗑 Abbrechen',
     confirm_save:'Runde speichern und abschließen?',
-    confirm_discard:'Runde abbrechen und verwerfen? Alle eingetragenen Schläge gehen verloren.',
+    confirm_discard:'Runde abbrechen und verwerfen?
+Alle eingetragenen Schläge gehen verloren.',
     miss_where:'Wo daneben?',
     fw_miss:['Links','Rechts','Bunker','Zu lang','Zu kurz'],
     gir_miss:['Links','Rechts','Bunker','Zu lang','Zu kurz','Chip daneben'],
@@ -397,7 +379,8 @@ const LANG = {
     yes:'✓ Yes',no_btn:'✗ No',
     btn_save_round:'🏁 Save',btn_discard:'🗑 Discard',
     confirm_save:'Save and finish round?',
-    confirm_discard:'Discard round? All entered strokes will be lost.',
+    confirm_discard:'Discard round?
+All entered strokes will be lost.',
     miss_where:'Where missed?',
     fw_miss:['Left','Right','Bunker','Too long','Too short'],
     gir_miss:['Left','Right','Bunker','Too long','Too short','Chip missed'],
@@ -461,7 +444,8 @@ const LANG = {
     yes:'✓ Sì',no_btn:'✗ No',
     btn_save_round:'🏁 Salva',btn_discard:'🗑 Annulla',
     confirm_save:'Salvare e concludere il giro?',
-    confirm_discard:'Annullare il giro? Tutti i colpi inseriti andranno persi.',
+    confirm_discard:'Annullare il giro?
+Tutti i colpi inseriti andranno persi.',
     miss_where:'Dove?',
     fw_miss:['Sinistra','Destra','Bunker','Troppo lungo','Troppo corto'],
     gir_miss:['Sinistra','Destra','Bunker','Troppo lungo','Troppo corto','Chip mancato'],
@@ -904,122 +888,8 @@ function discardFromEntry() {
   showPage('pg-home');
 }
 
-// ── COURSE DROPDOWN ──
-function getPinnedCourses() {
-  try { return JSON.parse(localStorage.getItem('gf_pinned_courses')||'[]'); } catch{ return []; }
-}
-function togglePinCourse(id, e) {
-  e.stopPropagation();
-  const pins = getPinnedCourses();
-  const idx = pins.indexOf(id);
-  if (idx>=0) pins.splice(idx,1); else pins.unshift(id);
-  localStorage.setItem('gf_pinned_courses', JSON.stringify(pins));
-  buildCourseDropdownList($('course-search-input')?.value||'');
-}
-function getCourseUsageStats() {
-  // count how often each course appears in rounds + last played date
-  const stats = {};
-  rounds.forEach(r => {
-    if (!r.course_id) return;
-    if (!stats[r.course_id]) stats[r.course_id] = {count:0, last:''};
-    stats[r.course_id].count++;
-    const d = r.played_at||r.created_at||'';
-    if (d > stats[r.course_id].last) stats[r.course_id].last = d;
-  });
-  return stats;
-}
-function sortedCourses() {
-  const pins = getPinnedCourses();
-  const usage = getCourseUsageStats();
-  return [...courses].sort((a,b) => {
-    const aPin = pins.includes(a.id), bPin = pins.includes(b.id);
-    if (aPin !== bPin) return aPin ? -1 : 1;
-    const aU = usage[a.id]||{count:0,last:''};
-    const bU = usage[b.id]||{count:0,last:''};
-    // by count desc, then last played desc, then name asc
-    if (bU.count !== aU.count) return bU.count - aU.count;
-    if (bU.last !== aU.last) return bU.last > aU.last ? 1 : -1;
-    return a.name.localeCompare(b.name);
-  });
-}
-function buildCourseDropdownList(filter) {
-  const pins = getPinnedCourses();
-  const usage = getCourseUsageStats();
-  const sorted = sortedCourses();
-  const q = (filter||'').toLowerCase();
-  const filtered = q ? sorted.filter(c=>c.name.toLowerCase().includes(q)||c.location?.toLowerCase().includes(q)) : sorted;
-  const currentVal = $('rs-course').value;
-  if (!currentVal && filtered.length) {
-    // auto-select first on initial render
-    selectCourse(filtered[0].id, filtered[0].name);
-  }
-  $('course-dropdown-list').innerHTML = filtered.map(c => {
-    const isPinned = pins.includes(c.id);
-    const u = usage[c.id];
-    const isSel = c.id === $('rs-course').value;
-    let badge = '';
-    if (isPinned) badge = '<span style="font-size:10px;color:#fbbf24;margin-left:4px;">📌</span>';
-    else if (u?.count >= 3) badge = `<span style="font-size:10px;color:#4ade80;margin-left:4px;">⭐ ${u.count}×</span>`;
-    else if (u?.count >= 1) badge = `<span style="font-size:10px;color:#6b9e7a;margin-left:4px;">${u.count}×</span>`;
-    return `
-      <div onclick="selectCourse('${c.id}','${c.name.replace(/'/g,"\\'")}');event.stopPropagation()"
-        style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;cursor:pointer;background:${isSel?'#22c55e22':'transparent'};border:1px solid ${isSel?'#4ade80':'transparent'};margin-bottom:3px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:${isSel?'700':'500'};color:${isSel?'#4ade80':'#ecfdf5'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${c.name}${badge}
-          </div>
-          ${c.location?`<div style="font-size:11px;color:#6b9e7a;">${c.location}</div>`:''}
-        </div>
-        <button onclick="togglePinCourse('${c.id}',event)"
-          title="${isPinned?'Entpinnen':'Anpinnen'}"
-          style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:2px 4px;color:${isPinned?'#fbbf24':'#2d4d38'};flex-shrink:0;">
-          📌
-        </button>
-      </div>`;
-  }).join('') || '<div style="color:#6b9e7a;font-size:13px;padding:12px 8px;">Kein Platz gefunden.</div>';
-}
-function selectCourse(id, name) {
-  $('rs-course').value = id;
-  $('course-selected-label').textContent = name;
-  closeCourseDropdown();
-  updateTeeOptions();
-}
-function toggleCourseDropdown() {
-  const panel = $('course-dropdown-panel');
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    $('course-dropdown-arrow').textContent = '▲';
-    buildCourseDropdownList('');
-    $('course-search-input').value = '';
-    $('course-search-input').focus();
-    // close on outside click
-    setTimeout(()=>document.addEventListener('click', outsideDropdownClick), 0);
-  } else {
-    closeCourseDropdown();
-  }
-}
-function closeCourseDropdown() {
-  $('course-dropdown-panel').style.display = 'none';
-  $('course-dropdown-arrow').textContent = '▼';
-  document.removeEventListener('click', outsideDropdownClick);
-}
-function outsideDropdownClick(e) {
-  if (!$('course-dropdown-wrap').contains(e.target)) closeCourseDropdown();
-}
-function filterCourseDropdown() {
-  buildCourseDropdownList($('course-search-input').value);
-}
 function renderCourseSelect() {
-  // pick smart default: first pinned, or most-used, or first
-  const currentVal = $('rs-course').value;
-  const sorted = sortedCourses();
-  if (!currentVal || !courses.find(c=>c.id===currentVal)) {
-    const first = sorted[0];
-    if (first) {
-      $('rs-course').value = first.id;
-      $('course-selected-label').textContent = first.name;
-    }
-  }
+  $('rs-course').innerHTML = courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   updateTeeOptions();
 }
 
