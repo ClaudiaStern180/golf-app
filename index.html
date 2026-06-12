@@ -272,6 +272,13 @@
   </div>
 </div>
 
+<!-- LANG BAR: fixed top-right, visible after login -->
+<div id="lang-bar" style="display:none;position:fixed;top:10px;right:12px;z-index:300;display:none;gap:3px;flex-direction:row;">
+  <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇩🇪</button>
+  <button onclick="setLang('en')" id="lang-en" title="English" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇬🇧</button>
+  <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:2px 7px;font-size:14px;cursor:pointer;">🇮🇹</button>
+</div>
+
 <nav id="main-nav" style="display:none;">
   <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span>Home</button>
   <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span>Plätze</button>
@@ -510,9 +517,16 @@ const LANG = {
   }
 };
 function t(k){return LANG[currentLang]?.[k]??LANG.de[k]??k;}
+function updateLangBar() {
+  ['de','en','it'].forEach(l => {
+    const b = $('lang-'+l);
+    if (b) b.style.borderColor = l===currentLang ? '#4ade80' : '#2d4d38';
+  });
+}
 function setLang(lang){
   currentLang=lang;
   localStorage.setItem('gf_lang',lang);
+  updateLangBar();
   const active=document.querySelector('.page.active')?.id;
   if(active) showPage(active);
   renderAuthPage();
@@ -545,7 +559,7 @@ try {
   }).catch(() => {});
   sb.auth.onAuthStateChange((_, session) => {
     if (session?.user) loginUser(session.user);
-    else { currentUser = null; showPage('pg-auth'); document.getElementById('main-nav').style.display='none'; }
+    else { currentUser = null; showPage('pg-auth'); document.getElementById('main-nav').style.display='none'; const lb=document.getElementById('lang-bar'); if(lb) lb.style.display='none'; }
   });
 } catch(ex) {
   document.body.innerHTML = '<div style="padding:30px;color:#f87171;background:#060e08;min-height:100vh"><h2 style="color:#4ade80">⛳ GolfTracker</h2><p>Verbindungsfehler: '+ex.message+'</p></div>';
@@ -630,6 +644,9 @@ async function loginUser(u) {
     if (ar) try { activeRound = JSON.parse(ar); } catch(e){}
   } catch(ex) { console.error('loginUser error:', ex); }
   document.getElementById('main-nav').style.display = 'flex';
+  // show language bar
+  const lb = document.getElementById('lang-bar');
+  if (lb) { lb.style.display = 'flex'; updateLangBar(); }
   if (currentProfile?.is_admin) $('nav-admin').style.display = '';
   showPage('pg-home');
   // Show changelog if new version
