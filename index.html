@@ -156,9 +156,9 @@
   <h2 id="round-page-title">Neue Runde</h2>
   <div id="round-active-banner"></div>
   <div id="round-setup-form">
-    <label class="label">📅 Datum</label>
+    <label class="label" id="lbl-date">📅 Datum</label>
     <input id="rs-date" type="date"/>
-    <label class="label">⛳ Golfplatz</label>
+    <label class="label" id="lbl-course">⛳ Golfplatz</label>
     <div id="course-dropdown-wrap" style="position:relative;">
       <div id="course-selected-display" onclick="toggleCourseDropdown()"
         style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:42px;">
@@ -175,12 +175,12 @@
     </div>
     <!-- Hidden value carrier so existing code keeps working -->
     <input type="hidden" id="rs-course" value=""/>
-    <label class="label">🔢 Löcher</label>
+    <label class="label" id="lbl-holes">🔢 Löcher</label>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="tog on" id="btn-9" onclick="setHoles(9)">9 Löcher</button>
       <button class="tog" id="btn-18" onclick="setHoles(18)">18 Löcher</button>
     </div>
-    <label class="label">🎯 Abschlag</label>
+    <label class="label" id="lbl-tee">🎯 Abschlag</label>
     <div id="tee-options" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
     <div id="rs-course-info" class="card" style="margin-top:12px;"></div>
     <div style="margin-top:12px;">
@@ -204,8 +204,8 @@
       <div id="players-list"></div>
     </div>
     <div class="grid2" style="margin-top:16px;">
-      <button class="btn btn-dark" onclick="showPage('pg-home')">← Zurück</button>
-      <button class="btn btn-green" onclick="startRound()">▶ Starten</button>
+      <button class="btn btn-dark" id="btn-back-home" onclick="showPage('pg-home')">← Zurück</button>
+      <button class="btn btn-green" id="btn-start-round" onclick="startRound()">▶ Starten</button>
     </div>
   </div>
   <!-- HOLE ENTRY -->
@@ -252,12 +252,10 @@
 <div id="pg-service" class="page">
   <h2 id="svc-h2">💬 Service</h2>
   <div class="card" style="margin-bottom:12px;">
-    <div style="font-size:13px;color:#6b9e7a;line-height:1.6;">
-      <span id="svc-intro-text">Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.</span>
-    </div>
+    <div style="font-size:13px;color:#6b9e7a;line-height:1.6;" id="svc-intro-text">Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.</div>
   </div>
   <div class="card">
-    <label class="label">Betreff</label>
+    <label class="label" id="svc-lbl-subject">Betreff</label>
     <select id="svc-subject">
       <option value="Vorschlag">💡 Vorschlag / Idee</option>
       <option value="Problem">⚠️ Problem / Fehler</option>
@@ -265,31 +263,24 @@
       <option value="Platz fehlt">🗺️ Platz fehlt / Daten falsch</option>
       <option value="Sonstiges">📝 Sonstiges</option>
     </select>
-    <label class="label" style="margin-top:10px;">Nachricht</label>
-    <textarea id="svc-message" placeholder="Deine Nachricht an den Admin…" style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;min-height:120px;resize:vertical;font-family:inherit;margin-top:4px;"></textarea>
+    <label class="label" style="margin-top:10px;" id="svc-lbl-msg">Nachricht</label>
+    <textarea id="svc-message" id="svc-msg-area" placeholder="Deine Nachricht an den Admin…" style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;outline:none;min-height:120px;resize:vertical;font-family:inherit;margin-top:4px;"></textarea>
     <div id="svc-result"></div>
     <button class="btn btn-green" id="svc-send-btn" onclick="sendServiceMessage()" style="margin-top:12px;">📨 Nachricht senden</button>
   </div>
 
   <div class="card" style="margin-top:12px;" id="svc-history">
-    <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Meine gesendeten Nachrichten</div>
+    <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;" id="svc-hist-title">Meine gesendeten Nachrichten</div>
     <div id="svc-history-list" class="muted" style="font-size:13px;">Lade…</div>
   </div>
 </div>
 
-<!-- LANG BAR: fixed top-right, visible after login -->
-<div id="lang-bar" style="display:none;position:fixed;top:10px;right:12px;z-index:300;display:none;gap:3px;flex-direction:row;">
-  <button onclick="setLang('de')" id="lang-de2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">DE</button>
-  <button onclick="setLang('en')" id="lang-en2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">EN</button>
-  <button onclick="setLang('it')" id="lang-it2" style="background:#0b1e10;border:1px solid #2d4d38;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer;color:#ecfdf5;font-family:inherit;">IT</button>
-</div>
-
 <nav id="main-nav" style="display:none;">
-  <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span><span id="nav-lbl-home">Home</span></button>
-  <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span><span id="nav-lbl-courses">Plätze</span></button>
-  <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span><span id="nav-lbl-round">Runde</span></button>
-  <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span><span id="nav-lbl-stats">Stats</span></button>
-  <button onclick="showPage('pg-service')" id="nav-service"><span>💬</span><span id="nav-lbl-service">Service</span></button>
+  <button onclick="showPage('pg-home')" id="nav-home" class="active"><span>🏠</span><span id="nav-lbl-home" style="font-size:10px;">Home</span></button>
+  <button onclick="showPage('pg-courses')" id="nav-courses"><span>🗺️</span><span id="nav-lbl-courses" style="font-size:10px;">Plätze</span></button>
+  <button onclick="showPage('pg-round')" id="nav-round"><span>⛳</span><span id="nav-lbl-round" style="font-size:10px;">Runde</span></button>
+  <button onclick="showPage('pg-stats')" id="nav-stats"><span>📊</span><span id="nav-lbl-stats" style="font-size:10px;">Stats</span></button>
+  <button onclick="showPage('pg-service')" id="nav-service"><span>💬</span><span id="nav-lbl-service" style="font-size:10px;">Service</span></button>
   <button onclick="showPage('pg-admin')" id="nav-admin" style="display:none;"><span>🛡️</span>Admin</button>
   <button onclick="logout()"><span>👤</span>Logout</button>
 </nav>
@@ -379,7 +370,7 @@ const LANG = {
     admin_title:'🛡️ Admin',admin_players:'👥 Spieler',admin_courses:'🗺️ Plätze',admin_rounds:'⛳ Runden',
     all_players:'Alle Spieler',last_rounds:'Letzte Runden',
     service_title:'💬 Service',
-    service_intro:'<span id="svc-intro-text">Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.</span>',
+    service_intro:'Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.',
     service_subject:'Betreff',service_msg:'Nachricht',service_send:'📨 Nachricht senden',
     service_sent:'✅ Nachricht gesendet! Der Admin wird sich melden.',
     service_history:'Meine gesendeten Nachrichten',service_empty:'Noch keine Nachrichten gesendet.',
@@ -525,7 +516,7 @@ function t(k){return LANG[currentLang]?.[k]??LANG.de[k]??k;}
 function updateLangBar() {
   // text buttons — all instances
   ['de','en','it'].forEach(l => {
-    ['lang-'+l, 'lang-'+l+'2', 'auth-lang-'+l].forEach(id => {
+    ['lang-'+l, 'auth-lang-'+l].forEach(id => {
       const b = $(id);
       if (b) b.style.cssText += ';border-color:' + (l===currentLang ? '#4ade80' : '#2d4d38') + ';color:' + (l===currentLang ? '#4ade80' : '#ecfdf5');
     });
@@ -544,7 +535,7 @@ function applyI18nToDOM() {
   const nl = {home:'nav_home',courses:'nav_courses',round:'nav_round',stats:'nav_stats',service:'nav_service'};
   Object.entries(nl).forEach(([k,v])=>{ const el=$('nav-lbl-'+k); if(el) el.textContent=t(v); });
   // Home
-  const nrb = $('home-new-round-btn'); if(nrb) nrb.textContent = '⛳ ' + t('new_round');
+  const nrb = $('home-new-round-btn'); if(nrb) nrb.innerHTML = '⛳ ' + t('new_round');
   // Courses
   const ch2 = $('courses-h2'); if(ch2) ch2.textContent = t('courses_title');
   const csl = $('courses-shared-lbl'); if(csl) csl.textContent = '🌐 ' + t('all_shared');
@@ -555,6 +546,11 @@ function applyI18nToDOM() {
   const sh2 = $('stats-h2'); if(sh2) sh2.textContent = t('analysis')||'Analyse';
   // Service
   const si = $('svc-intro-text'); if(si) si.textContent = t('service_intro');
+  const svcMsgLbl = $('svc-lbl-msg'); if(svcMsgLbl) svcMsgLbl.textContent = t('service_msg');
+  const svcSubjLbl = $('svc-lbl-subject'); if(svcSubjLbl) svcSubjLbl.textContent = t('service_subject');
+  const sht = $('svc-hist-title'); if(sht) sht.textContent = t('service_history');
+  const slbl = $('svc-subject')?.previousElementSibling; 
+  const smsg = $('svc-msg-area'); if(smsg) smsg.placeholder = currentLang==='it'?'Il tuo messaggio per l\'admin…':currentLang==='en'?'Your message to the admin…':'Deine Nachricht an den Admin…';
   const sh = $('svc-h2'); if(sh) sh.textContent = t('service_title');
   const sb2 = $('svc-send-btn'); if(sb2) sb2.textContent = '📨 ' + t('service_send').replace('📨 ','');
   // Service subject options
@@ -570,6 +566,23 @@ function applyI18nToDOM() {
   // Hole buttons
   const b9 = $('btn-9'); if(b9) b9.textContent = t('h9');
   const b18 = $('btn-18'); if(b18) b18.textContent = t('h18');
+  // Round setup labels
+  const lblDate=$('lbl-date'); if(lblDate) lblDate.textContent='📅 '+t('date_label').replace('📅 ','');
+  const lblCourse=$('lbl-course'); if(lblCourse) lblCourse.textContent='⛳ '+t('course_label').replace('⛳ ','');
+  const lblHoles=$('lbl-holes'); if(lblHoles) lblHoles.textContent='🔢 '+t('holes_title').replace('🔢 ','');
+  const lblTee=$('lbl-tee'); if(lblTee) lblTee.textContent='🎯 '+t('tee_title').replace('🎯 ','');
+  const btnBack=$('btn-back-home'); if(btnBack) btnBack.textContent='← '+t('back');
+  const btnStart=$('btn-start-round'); if(btnStart) btnStart.textContent='▶ '+t('start');
+  // Course dropdown placeholder
+  const csl2=$('course-selected-label'); if(csl2&&csl2.textContent==='Platz wählen…') csl2.textContent=t('course_label')+'…';
+  // Search placeholder
+  const csi=$('course-search-input'); if(csi) csi.placeholder='🔍 '+(['de'].includes(currentLang)?'Suchen…':'en'===currentLang?'Search…':'Cerca…');
+  // Hole entry buttons
+  const saveRndBtn=document.querySelector('#hole-entry .btn-green'); 
+  const prevH=$('prev-hole'); // handled in changeHole
+  // HCP Index label
+  const hcpLbl=document.querySelector('#pg-home .muted[style*="font-size:10px"]'); 
+  if(hcpLbl&&hcpLbl.textContent.match(/HCP Index|HCP Index/)) hcpLbl.textContent='HCP Index';
 }
 function setLang(lang){
   currentLang=lang;
@@ -617,7 +630,7 @@ try {
   }).catch(() => {});
   sb.auth.onAuthStateChange((_, session) => {
     if (session?.user) loginUser(session.user);
-    else { currentUser = null; showPage('pg-auth'); document.getElementById('main-nav').style.display='none'; const lb=document.getElementById('lang-bar'); if(lb) lb.style.display='none'; }
+    else { currentUser = null; showPage('pg-auth'); document.getElementById('main-nav').style.display='none'; }
   });
 } catch(ex) {
   document.body.innerHTML = '<div style="padding:30px;color:#f87171;background:#060e08;min-height:100vh"><h2 style="color:#4ade80">⛳ GolfTracker</h2><p>Verbindungsfehler: '+ex.message+'</p></div>';
@@ -702,9 +715,7 @@ async function loginUser(u) {
     if (ar) try { activeRound = JSON.parse(ar); } catch(e){}
   } catch(ex) { console.error('loginUser error:', ex); }
   document.getElementById('main-nav').style.display = 'flex';
-  // show language bar
-  const lb = document.getElementById('lang-bar');
-  if (lb) { lb.style.display = 'flex'; updateLangBar(); }
+  updateLangBar();
   if (currentProfile?.is_admin) $('nav-admin').style.display = '';
   showPage('pg-home');
   // Show changelog if new version
@@ -737,19 +748,7 @@ function renderHome() {
   });
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
-  // ensure lang buttons exist (in case static HTML wasn't rendered)
-  if (!$('lang-de')) {
-    const hcpWrap = $('home-hcp')?.parentElement;
-    if (hcpWrap) {
-      const langBar = document.createElement('div');
-      langBar.style.cssText = 'display:flex;gap:4px;justify-content:flex-end;margin-bottom:6px;';
-      langBar.innerHTML = `
-        <button onclick="setLang('de')" id="lang-de" title="Deutsch" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇩🇪</button>
-        <button onclick="setLang('en')" id="lang-en" title="English" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇬🇧</button>
-        <button onclick="setLang('it')" id="lang-it" title="Italiano" style="background:transparent;border:1px solid #2d4d38;border-radius:6px;padding:2px 6px;font-size:15px;cursor:pointer;">🇮🇹</button>`;
-      hcpWrap.insertBefore(langBar, hcpWrap.firstChild);
-    }
-  }
+
   ['de','en','it'].forEach(l => {
     const b = $('lang-'+l);
     if (b) b.style.borderColor = l===currentLang ? '#4ade80' : '#2d4d38';
@@ -769,7 +768,7 @@ function renderHome() {
   if (activeRound) {
     $('home-active-round').innerHTML = `
       <div class="card" style="background:linear-gradient(135deg,#166534,#0d2416);border-color:#4ade80;cursor:pointer;margin-bottom:12px;" onclick="showPage('pg-round')">
-        <div style="font-size:11px;color:#4ade80;font-weight:600;letter-spacing:1px;">AKTIVE RUNDE</div>
+        <div style="font-size:11px;color:#4ade80;font-weight:600;letter-spacing:1px;">${t('active_round')}</div>
         <div style="font-size:16px;font-weight:600;margin-top:2px;">${activeRound.courseName}</div>
         <div class="muted">${activeRound.players?.length} Spieler · ${activeRound.numHoles} Löcher</div>
       </div>`;
@@ -781,7 +780,7 @@ function renderHome() {
     $('home-last-round').innerHTML = `
       <div class="card" style="margin-bottom:12px;cursor:pointer;" onclick="showRoundDetail('${last.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;">LETZTE RUNDE 👆</div>
+          <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;">${t('last_round')} 👆</div>
           <button class="btn btn-red btn-sm" style="padding:4px 10px;font-size:11px;" onclick="event.stopPropagation();deleteRound('${last.id}')">🗑 Löschen</button>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -988,14 +987,14 @@ function resumeRound() {
 }
 
 function discardRound() {
-  if (!confirm('Runde verwerfen?')) return;
+  if (!confirm(t('confirm_discard'))) return;
   activeRound = null;
   localStorage.removeItem('gf_ar_'+currentUser.id);
   renderRoundPage();
 }
 
 function discardFromEntry() {
-  if (!confirm('Runde abbrechen und verwerfen?\nAlle eingetragenen Schläge gehen verloren.')) return;
+  if (!confirm(t('confirm_discard'))) return;
   activeRound = null;
   localStorage.removeItem('gf_ar_'+currentUser.id);
   $('hole-entry').style.display = 'none';
@@ -1073,12 +1072,12 @@ function buildCourseDropdownList(filter) {
           ${c.location?`<div style="font-size:11px;color:#6b9e7a;">${c.location}</div>`:''}
         </div>
         <button onclick="togglePinCourse('${c.id}',event)"
-          title="${isPinned?'Entpinnen':'Anpinnen'}"
+          title="${isPinned?(currentLang==="it"?"Rimuovi":currentLang==="en"?"Unpin":"Entpinnen"):(currentLang==="it"?"Fissa":currentLang==="en"?"Pin":"Anpinnen")}"
           style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:2px 4px;color:${isPinned?'#fbbf24':'#2d4d38'};flex-shrink:0;">
           📌
         </button>
       </div>`;
-  }).join('') || '<div style="color:#6b9e7a;font-size:13px;padding:12px 8px;">Kein Platz gefunden.</div>';
+  }).join('') || '<div style="color:#6b9e7a;font-size:13px;padding:12px 8px;">'+(currentLang==="it"?"Nessun percorso trovato.":currentLang==="en"?"No course found.":"Kein Platz gefunden.")+'</div>';
 }
 function selectCourse(id, name) {
   $('rs-course').value = id;
@@ -1159,7 +1158,7 @@ function updateCourseInfo() {
       <div class="stat-box"><div class="big-num" style="font-size:20px;">${td.sr}</div><div class="muted" style="font-size:10px;">Slope</div></div>
       <div class="stat-box"><div class="big-num" style="font-size:20px;">${td.par}</div><div class="muted" style="font-size:10px;">Par</div></div>
     </div>
-    <div style="margin-top:8px;font-size:12px;color:#6b9e7a;">Dein Platz-HCP: <span style="color:#4ade80;font-weight:600;">${chcp}</span></div>`;
+    <div style="margin-top:8px;font-size:12px;color:#6b9e7a;">${t('course_hcp')}: <span style="color:#4ade80;font-weight:600;">${chcp}</span></div>`;
 }
 
 function renderPlayersList() {
@@ -1175,12 +1174,12 @@ function renderPlayersList() {
           <div style="font-size:14px;font-weight:600;color:${sel?'#4ade80':'#ecfdf5'}">${p.name}</div>
           ${editPlayersMode
             ? `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;"><span class="muted" style="font-size:11px;">HCP:</span><input type="number" step="0.1" value="${p.hcpIndex}" style="width:70px;padding:4px 8px;font-size:12px;" onchange="updatePlayerHcp('${p.id}',this.value)" onclick="event.stopPropagation()"/></div>`
-            : `<div class="muted" style="font-size:11px;">HCP ${parseFloat(p.hcpIndex).toFixed(1)}${chcp!==''?' · Platz-HCP '+chcp:''}</div>`
+            : `<div class="muted" style="font-size:11px;">HCP ${parseFloat(p.hcpIndex).toFixed(1)}${chcp!==''?' · '+t('course_hcp')+' '+chcp:''}</div>`
           }
         </div>
         ${editPlayersMode?`<button class="tog btn-sm" style="color:#f87171;" onclick="deletePlayer('${p.id}');event.stopPropagation()">🗑</button>`:''}
       </div>`;
-  }).join('') + (savedPlayers.length===0&&!editPlayersMode?'<div class="muted" style="text-align:center;padding:20px;">Klicke auf <span style="color:#4ade80">+ Neu</span> um Spieler anzulegen.</div>':'');
+  }).join('') + (savedPlayers.length===0&&!editPlayersMode?t('p_saved'):'');
 }
 
 function togglePlayer(id) {
@@ -1194,7 +1193,7 @@ function togglePlayer(id) {
 function toggleEditPlayers() {
   editPlayersMode = !editPlayersMode;
   $('edit-players-btn').className = 'tog btn-sm' + (editPlayersMode?' on':'');
-  $('edit-players-btn').textContent = editPlayersMode ? '✓ Fertig' : '✏️';
+  $('edit-players-btn').textContent = editPlayersMode ? '✓ '+t('save') : '✏️';
   renderPlayersList();
 }
 
@@ -1233,9 +1232,9 @@ async function deletePlayer(id) {
 function startRound() {
   const course = courses.find(c=>c.id===$('rs-course').value);
   const td = course?.tees?.[selectedTee];
-  if (!course||!td) { alert('Bitte Platz und Abschlag wählen'); return; }
+  if (!course||!td) { alert(t('course_label')+' & '+t('tee_title')); return; }
   const players = savedPlayers.filter(p=>selectedPlayerIds.includes(p.id));
-  if (!players.length) { alert('Bitte mindestens einen Spieler auswählen'); return; }
+  if (!players.length) { alert(t('players_title')); return; }
   const date = $('rs-date').value || new Date().toISOString().split('T')[0];
   const holes = (course.holes||[]).slice(0,selectedHoles).map((h,i)=>({holeNum:i+1,par:h.par||4,si:h.si||i+1,dist:h.dist||0}));
   const playersFull = players.map(p=>{
@@ -1288,8 +1287,8 @@ function changeHole(d) {
   const max = activeRound.numHoles - 1;
   currentHoleIdx = Math.max(0, Math.min(max, currentHoleIdx + d));
   renderHoleEntry();
-  $('prev-hole').textContent = '← Loch ' + currentHoleIdx;
-  $('next-hole').textContent = currentHoleIdx < max ? 'Loch '+(currentHoleIdx+2)+' →' : 'Fertig';
+  $('prev-hole').textContent = '← '+t('hole')+' ' + currentHoleIdx;
+  $('next-hole').textContent = currentHoleIdx < max ? t('hole')+' '+(currentHoleIdx+2)+' →' : '✓ '+t('save');
 }
 
 function renderHoleCard() {
@@ -1305,14 +1304,14 @@ function renderHoleCard() {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div>
-          <div style="font-size:30px;font-weight:700;line-height:1;">Loch ${hole.holeNum}</div>
+          <div style="font-size:30px;font-weight:700;line-height:1;">${t('hole')} ${hole.holeNum}</div>
           <div class="muted">Par ${hole.par} · SI ${hole.si} · ${hole.dist||0}m</div>
-          ${st!==0?`<div style="font-size:11px;color:${st>0?'#4ade80':'#f87171'};margin-top:2px;">${st>0?'+'+st+' Vorgabeschlag'+(st>1?'e':''):st+' Schlag abgeben'}</div>`:''}
+          ${st!==0?`<div style="font-size:11px;color:${st>0?'#4ade80':'#f87171'};margin-top:2px;">${st>0?'+'+st+' '+t('late_entry').replace('⚠️ ',''):'−'+Math.abs(st)}</div>`:''}
         </div>
         <div style="text-align:right;">
-          <div class="muted" style="font-size:10px;">Brutto / Netto</div>
+          <div class="muted" style="font-size:10px;">${t('brutto_netto')}</div>
           <div style="font-size:20px;font-weight:700;">${brutPts} <span style="color:#4ade80;">${netPts}</span></div>
-          <div class="muted" style="font-size:10px;">Platz-HCP ${player.courseHcp}</div>
+          <div class="muted" style="font-size:10px;">${t('course_hcp')} ${player.courseHcp}</div>
         </div>
       </div>
       <div style="margin-bottom:14px;">
@@ -1326,22 +1325,22 @@ function renderHoleCard() {
       </div>
       <div id="hole-stats">
         ${hole.par!==3?`
-          <div class="row"><span class="muted">Fairway getroffen?</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">✓ Ja</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">✗ Nein</button></div></div>
-          ${hole.fairway===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('fw_miss').map(m=>`<button class="tog${hole.fairwayMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('fairwayMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
+          <div class="row"><span class="muted">${t('fairway_q')}</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">${t('yes')}</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">${t('no_btn')}</button></div></div>
+          ${hole.fairway===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">${t('miss_where')}</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('fw_miss').map(m=>`<button class="tog${hole.fairwayMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('fairwayMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
         `:''}
-        <div class="row"><span class="muted">GIR (Grün in Regulation)?</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">✓ Ja</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">✗ Nein</button></div></div>
-        ${hole.gir===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('gir_miss').map(m=>`<button class="tog${hole.girMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('girMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
-        <div class="row"><span class="muted">Putts</span><div style="display:flex;gap:5px;">${[0,1,2,3,4].map(n=>`<button class="hole-btn${hole.putts===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('putts',${n})">${n}</button>`).join('')}</div></div>
-        <div class="row"><span class="muted">Bunker?</span><div><button class="tog${hole.bunker===true?' on':''}" onclick="setHoleStat('bunker',true)">✓ Ja</button> <button class="tog${hole.bunker===false?' no':''}" onclick="setHoleStat('bunker',false)">✗ Nein</button></div></div>
-        ${hole.bunker?`<div class="row"><span class="muted">Sand Save?</span><div><button class="tog${hole.sandSave===true?' on':''}" onclick="setHoleStat('sandSave',true)">✓ Ja</button> <button class="tog${hole.sandSave===false?' no':''}" onclick="setHoleStat('sandSave',false)">✗ Nein</button></div></div>`:''}
-        <div class="row"><span class="muted">Penalty / OB</span><div style="display:flex;gap:5px;">${[0,1,2,3].map(n=>`<button class="hole-btn${hole.ob===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('ob',${n})">${n}</button>`).join('')}</div></div>
+        <div class="row"><span class="muted">${t('gir_q')}</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">${t('yes')}</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">${t('no_btn')}</button></div></div>
+        ${hole.gir===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">${t('miss_where')}</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('gir_miss').map(m=>`<button class="tog${hole.girMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('girMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
+        <div class="row"><span class="muted">${t('putts_label')}</span><div style="display:flex;gap:5px;">${[0,1,2,3,4].map(n=>`<button class="hole-btn${hole.putts===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('putts',${n})">${n}</button>`).join('')}</div></div>
+        <div class="row"><span class="muted">${t('bunker_q')}</span><div><button class="tog${hole.bunker===true?' on':''}" onclick="setHoleStat('bunker',true)">${t('yes')}</button> <button class="tog${hole.bunker===false?' no':''}" onclick="setHoleStat('bunker',false)">${t('no_btn')}</button></div></div>
+        ${hole.bunker?`<div class="row"><span class="muted">${t('sandsave_q')}</span><div><button class="tog${hole.sandSave===true?' on':''}" onclick="setHoleStat('sandSave',true)">${t('yes')}</button> <button class="tog${hole.sandSave===false?' no':''}" onclick="setHoleStat('sandSave',false)">${t('no_btn')}</button></div></div>`:''}
+        <div class="row"><span class="muted">${t('penalty_label')}</span><div style="display:flex;gap:5px;">${[0,1,2,3].map(n=>`<button class="hole-btn${hole.ob===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('ob',${n})">${n}</button>`).join('')}</div></div>
       </div>
     </div>`;
 
   const max = activeRound.numHoles - 1;
-  $('prev-hole').textContent = '← Loch ' + currentHoleIdx;
+  $('prev-hole').textContent = '← '+t('hole')+' ' + currentHoleIdx;
   $('prev-hole').disabled = currentHoleIdx === 0;
-  $('next-hole').textContent = currentHoleIdx < max ? 'Loch '+(currentHoleIdx+2)+' →' : '🏁 Abschließen';
+  $('next-hole').textContent = currentHoleIdx < max ? t('hole')+' '+(currentHoleIdx+2)+' →' : '🏁 '+t('btn_save_round');
 }
 
 function changeScore(d) {
@@ -1364,7 +1363,7 @@ function saveActiveRound() {
 }
 
 async function saveRound() {
-  if (!confirm('Runde speichern und abschließen?')) return;
+  if (!confirm(t('confirm_save'))) return;
   const totals = {};
   activeRound.players.forEach(p => {
     const sc = activeRound.scores[p.id]||[];
@@ -1381,7 +1380,7 @@ async function saveRound() {
   rounds = await sb.from('rounds').select('*').eq('user_id',currentUser.id).order('date',{ascending:false}).then(r=>r.data||[]);
   localStorage.removeItem('gf_ar_'+currentUser.id);
   activeRound = null;
-  alert('✅ Runde gespeichert!');
+  alert('✅ '+t('btn_save_round'));
   showPage('pg-home');
 }
 
@@ -1405,7 +1404,7 @@ function renderStats() {
 function renderStatSection(id) {
   const norm = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
   const allSc = norm.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
-  if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">Noch keine Runden.</p></div>'; return; }
+  if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">'+t('no_data')+'</p></div>'; return; }
 
   if (id==='verlauf') {
     const rows = norm.map((r,i)=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return{name:'R'+(i+1),date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),HCP:parseFloat(p?.hcpIndex||0),Netto:t.nettoStableford||0,Putts:t.putts||0};});
@@ -1416,7 +1415,7 @@ function renderStatSection(id) {
     const puttA=allSc.filter(h=>h.putts!=null);const avgPutts=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:0;
     $('stat-verlauf').innerHTML = `
       <div class="card">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">${t('key_stats')}</div>
         ${[
           [t('fw_pct'),''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','≥ 60%',t('goal_fw')],
           [t('gir_pct'),''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%',t('goal_gir')],
@@ -1426,13 +1425,13 @@ function renderStatSection(id) {
         ].map(([l,v,c,z,desc])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">Ziel: ${z} <span style="color:#4ade8088;">(${desc})</span></div></div></div>`).join('')}
       </div>
 <div class="card" style="margin-top:10px;">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Alle Runden</div>
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">${t('all_rounds')}</div>
         ${norm.map(r=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return`
           <div class="row" style="align-items:center;cursor:pointer;" onclick="showRoundDetail('${r.id}')">
             <div style="flex:1;">
               <div style="font-size:13px;font-weight:600;">${r.courseName}</div>
               <div class="muted" style="font-size:11px;">${new Date(r.date).toLocaleDateString('de-DE')} · ${r.numHoles}L · ${teeChip(r.teeType)}</div>
-              <div style="font-size:10px;color:#4ade8088;margin-top:2px;">👆 Tippen für Details</div>
+              <div style="font-size:10px;color:#4ade8088;margin-top:2px;">${t('tap_details')}</div>
             </div>
             <div style="text-align:right;margin-right:10px;">
               <div style="font-size:16px;font-weight:700;">
@@ -1441,7 +1440,7 @@ function renderStatSection(id) {
                 <span style="color:#fb923c;">${t.bruttoStableford||0}</span>
                 <span class="muted" style="font-size:12px;"> Brutto</span>
               </div>
-              <div class="muted" style="font-size:10px;">${t.bruttoScore||0} Schläge</div>
+              <div class="muted" style="font-size:10px;">${t.bruttoScore||0} ${t("strokes")}</div>
             </div>
             <button class="btn btn-red" style="width:auto;padding:4px 8px;font-size:16px;margin:0;" onclick="event.stopPropagation();deleteRound('${r.id}')">🗑</button>
           </div>`;}).join('')}
@@ -1454,10 +1453,10 @@ function renderStatSection(id) {
     $('stat-trend').innerHTML = `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div style="font-size:12px;color:#4ade80;font-weight:600;">📈 Trendkurven</div>
+          <div style="font-size:12px;color:#4ade80;font-weight:600;">${t("trend_title")}</div>
           <div style="display:flex;gap:6px;">
-            <button class="tog on" id="trend-btn-alle" onclick="setTrendMode('alle')" style="font-size:11px;padding:4px 10px;">📋 Alle</button>
-            <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">🔟 Letzte 10</button>
+            <button class="tog on" id="trend-btn-alle" onclick="setTrendMode('alle')" style="font-size:11px;padding:4px 10px;">${t("trend_all")}</button>
+            <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">${t("trend_last10")}</button>
           </div>
         </div>
         <div id="trend-content">${renderTrendCharts(sorted,'alle')}</div>
@@ -1481,7 +1480,7 @@ function renderStatSection(id) {
     const ang=i=>((i/n)*2*Math.PI)-Math.PI/2;
     const pt=(i,r)=>[CX+r*Math.cos(ang(i)),CY+r*Math.sin(ang(i))];
     const gridPoly=r=>data.map((_,i)=>pt(i,r).join(',')).join(' ');
-    $('stat-radar').innerHTML = `<div class="card"><div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Performance-Radar</div>
+    $('stat-radar').innerHTML = `<div class="card"><div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">${t("radar_title")}</div>
       <div style="display:flex;justify-content:center;">
         <svg width="280" height="240" viewBox="0 0 ${W} ${H}">
           ${[0.25,0.5,0.75,1].map(g=>`<polygon points="${gridPoly(R*g)}" fill="none" stroke="#2d4d38" stroke-width="1"/>`).join('')}
@@ -1500,15 +1499,15 @@ function renderStatSection(id) {
     const puttA=allSc.filter(h=>h.putts!=null);const ap=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:2;
     const tips=[];
     if(fw<50) tips.push(t('tip_driving'));
-    if(gir<40) tips.push('🎯 <b>Approach:</b> GIR unter 40% → Annäherungen mit 7–9-Eisen trainieren');
-    if(ap>2.1)  tips.push('🟢 <b>Putten:</b> Über 2.1 Putts/Loch → kurze Putts (1–2m) auf dem Grün üben');
-    if(avgOver(byPar(3))>1) tips.push('⛳ <b>Par 3:</b> Starke Verluste → Präzision mit kurzen Eisen verbessern');
-    if(avgOver(byPar(5))>1) tips.push('🦅 <b>Par 5:</b> Verluste auf langen Löchern → Lagewahl und 3. Schlag verbessern');
+    if(gir<40) tips.push(t('tip_approach'));
+    if(ap>2.1)  tips.push(t('tip_putting'));
+    if(avgOver(byPar(3))>1) tips.push(t('tip_par3'));
+    if(avgOver(byPar(5))>1) tips.push(t('tip_par5'));
     $('stat-tips').innerHTML = `
-      ${tips.length?tips.map(t=>`<div class="card" style="margin-bottom:8px;border-color:#fbbf2444;"><div style="font-size:13px;line-height:1.6;">${t}</div></div>`).join(''):'<div class="card" style="text-align:center;padding:24px;color:#4ade80;">🏆 Alles im grünen Bereich!</div>'}
+      ${tips.length?tips.map(t=>`<div class="card" style="margin-bottom:8px;border-color:#fbbf2444;"><div style="font-size:13px;line-height:1.6;">${t}</div></div>`).join(''):'<div class="card" style="text-align:center;padding:24px;color:#4ade80;">'+t('all_green')+'</div>'}
       <div class="card" style="margin-top:8px;">
-        <div style="font-size:12px;color:#fde68a;font-weight:600;margin-bottom:8px;">📌 Allgemeine Empfehlungen</div>
-        ${['1× pro Woche 30 Min. Putting-Training','Driving Range: 60% Eisen, 40% Holz','Vor Runden 15 Min. warm spielen','HCP-relevante Runden einreichen'].map(t=>`<div class="row"><span style="color:#4ade80;margin-right:8px;">✓</span><span class="muted">${t}</span></div>`).join('')}
+        <div style="font-size:12px;color:#fde68a;font-weight:600;margin-bottom:8px;">${t("gen_tips")}</div>
+        ${[t('gen_tip1'),t('gen_tip2'),t('gen_tip3'),t('gen_tip4')].map(t=>`<div class="row"><span style="color:#4ade80;margin-right:8px;">✓</span><span class="muted">${t}</span></div>`).join('')}
       </div>`;
   }
 
@@ -1531,9 +1530,9 @@ function renderStatSection(id) {
       <div class="card" style="margin-bottom:10px;">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:12px;">${t('sim_title')}</div>
         <div class="grid3" style="text-align:center;margin-bottom:10px;">
-          <div class="stat-box"><div class="big-num">${parseFloat(currentProfile?.hcp_index||18).toFixed(1)}</div><div class="muted" style="font-size:10px;">Aktuell</div></div>
+          <div class="stat-box"><div class="big-num">${parseFloat(currentProfile?.hcp_index||18).toFixed(1)}</div><div class="muted" style="font-size:10px;">${t("sim_current")}</div></div>
           <div class="stat-box" style="display:flex;align-items:center;justify-content:center;"><div style="font-size:24px;color:#2d4d38;">→</div></div>
-          <div class="stat-box"><div class="big-num">${curHcp!==null?curHcp.toFixed(1):'—'}</div><div class="muted" style="font-size:10px;">Berechnet</div></div>
+          <div class="stat-box"><div class="big-num">${curHcp!==null?curHcp.toFixed(1):'—'}</div><div class="muted" style="font-size:10px;">${t("sim_calc")}</div></div>
         </div>
         <div class="muted" style="font-size:11px;text-align:center;">Beste ${best8.length} von ${withDiff.length} Runden · × 0.96</div>
         ${withDiff.some(r=>(r.numHoles||18)<=9)?'<div style="font-size:10px;color:#fbbf24;text-align:center;margin-top:4px;">⚠️ 9-Loch Runden als 18-Loch-Äquivalent berechnet</div>':''}
@@ -1557,13 +1556,13 @@ function renderStatSection(id) {
             🏌️ ${t.bruttoScore||'—'} Schl.
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:${overUnder>0?'#f87171':overUnder<0?'#4ade80':'#ecfdf5'};">
-            ${overUnderStr} zum Par
+            ${overUnderStr} ${currentLang==='de'?'zum Par':currentLang==='it'?'al Par':'to Par'}
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;">
-            ${t.bruttoStableford||0} Brutto Pkt.
+            ${t.bruttoStableford||0} ${t('brutto_netto').split('/')[0].trim()} Pkt.
           </span>
           <span style="font-size:11px;background:#173320;border-radius:5px;padding:2px 7px;color:#4ade80;">
-            ${t.nettoStableford||0} Netto Pkt.
+            ${t.nettoStableford||0} ${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.
           </span>
         </div>
       </div>
@@ -1584,8 +1583,8 @@ async function sendServiceMessage() {
   const subject = document.getElementById('svc-subject').value;
   const message = document.getElementById('svc-message').value.trim();
   const res = document.getElementById('svc-result');
-  if (!message) { res.innerHTML = '<div class="err">Bitte eine Nachricht eingeben.</div>'; return; }
-  res.innerHTML = '<div class="muted" style="margin-top:8px;font-size:13px;">⏳ Wird gesendet…</div>';
+  if (!message) { res.innerHTML = '<div class="err">'+t('service_no_msg')+'</div>'; return; }
+  res.innerHTML = '<div class="muted" style="margin-top:8px;font-size:13px;">⏳…</div>';
   try {
     const {error} = await sb.from('service_messages').insert({
       user_id: currentUser.id,
@@ -1596,7 +1595,7 @@ async function sendServiceMessage() {
       status: 'offen'
     });
     if (error) throw error;
-    res.innerHTML = '<div class="ok" style="margin-top:8px;">✅ Nachricht gesendet! Der Admin wird sich melden.</div>';
+    res.innerHTML = '<div class="ok" style="margin-top:8px;">'+t('service_sent')+'</div>';
     document.getElementById('svc-message').value = '';
     renderServiceHistory();
   } catch(ex) {
@@ -1616,7 +1615,7 @@ async function renderServiceHistory() {
     .select('*').eq('user_id', currentUser.id)
     .order('created_at', {ascending:false});
   const data = (rawData||[]).filter(m=>m.status!=='gelöscht');
-  if (!data?.length) { list.innerHTML = 'Noch keine Nachrichten gesendet.'; return; }
+  if (!data?.length) { list.innerHTML = t('service_empty'); return; }
   const statusColor = s => s==='offen'?'#fbbf24':s==='beantwortet'?'#4ade80':'#6b9e7a';
   const statusLabel = s => s==='offen'?'⏳ Offen':s==='beantwortet'?'✅ Beantwortet':'📁 Geschlossen';
   list.innerHTML = data.map(m => `
@@ -1880,10 +1879,10 @@ function showRoundDetail(roundId) {
       ${players.map(p => {
         const t = norm.totals?.[p.id]||{};
         return `<div style="margin-bottom:16px;">
-          ${players.length>1?`<div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">👤 ${p.name} · HCP ${parseFloat(p.hcpIndex).toFixed(1)} · Platz-HCP ${p.courseHcp}</div>`:''}
+          ${players.length>1?`<div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">👤 ${p.name} · HCP ${parseFloat(p.hcpIndex).toFixed(1)} · ${t('course_hcp')} ${p.courseHcp}</div>`:''}
           <div class="grid3" style="margin-bottom:10px;">
-            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:9px;">Netto Pkt.</div></div>
-            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoStableford||0}</div><div class="muted" style="font-size:9px;">Brutto Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.nettoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[1]?.trim()||'Netto'} Pkt.</div></div>
+            <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoStableford||0}</div><div class="muted" style="font-size:9px;">${t('brutto_netto').split('/')[0].trim()} Pkt.</div></div>
             <div class="stat-box"><div class="big-num" style="font-size:22px;">${t.bruttoScore||0}</div><div class="muted" style="font-size:9px;">Schläge</div></div>
           </div>
           ${holeTable(p)}
