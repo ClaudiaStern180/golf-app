@@ -53,6 +53,10 @@
     .avatar{width:28px;height:28px;border-radius:50%;background:#2d4d38;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
     .avatar.sel{background:#4ade80;color:#000;}
     svg text{font-family:system-ui,sans-serif;}
+    #course-dropdown-list::-webkit-scrollbar{width:4px;}
+    #course-dropdown-list::-webkit-scrollbar-track{background:transparent;}
+    #course-dropdown-list::-webkit-scrollbar-thumb{background:#2d4d38;border-radius:4px;}
+    #course-selected-display:hover{border-color:#4ade80;}
   </style>
 </head>
 <body>
@@ -96,13 +100,13 @@
   </div>
   <div id="home-active-round"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
-    <div class="stat-box"><div class="big-num" id="stat-rounds">0</div><div class="muted" style="font-size:10px;margin-top:2px;">Runden</div></div>
-    <div class="stat-box"><div class="big-num" id="stat-avg">—</div><div class="muted" style="font-size:10px;margin-top:2px;">⌀ Netto</div></div>
-    <div class="stat-box"><div class="big-num" id="stat-best">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste Netto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-rounds">0</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-rounds">Runden</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-avg">—</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-avg-netto">⌀ Netto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-best">—</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-best-netto">Beste Netto</div></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-    <div class="stat-box"><div class="big-num" id="stat-avg-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;">⌀ Brutto</div></div>
-    <div class="stat-box"><div class="big-num" id="stat-best-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;">Beste Brutto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-avg-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-avg-brutto">⌀ Brutto</div></div>
+    <div class="stat-box"><div class="big-num" id="stat-best-brutto" style="color:#fb923c;">—</div><div class="muted" style="font-size:10px;margin-top:2px;" id="lbl-best-brutto">Beste Brutto</div></div>
   </div>
   <div id="home-last-round"></div>
   <button class="btn btn-green" onclick="showPage('pg-round')">⛳ Neue Runde starten</button>
@@ -110,18 +114,26 @@
 
 <!-- COURSES PAGE -->
 <div id="pg-courses" class="page">
-  <h2>Plätze</h2>
+  <h2 id="courses-h2">Plätze</h2>
   <div id="courses-list"></div>
   <div style="font-size:11px;color:#6b9e7a;text-align:center;margin:10px 0;padding:8px;background:#2d4d38;border-radius:8px;">🌐 Alle Plätze sind für alle Spieler sichtbar</div>
   <button class="btn btn-dark" onclick="showAddCourse()">✍️ Platz hinzufügen</button>
   <div id="add-course-form" style="display:none;margin-top:12px;" class="card">
     <h3>Neuer Platz</h3>
-    <label class="label">Platzname</label><input id="nc-name" placeholder="z.B. Golfclub München"/>
-    <label class="label">Ort</label><input id="nc-loc" placeholder="Bayern, Deutschland"/>
+    <label class="label">Platzname</label>
+    <input id="nc-name" placeholder="z.B. Golfclub München"/>
+    <label class="label">Ort</label>
+    <input id="nc-loc" placeholder="Bayern, Deutschland"/>
     <label class="label">Löcher</label>
-    <select id="nc-holes"><option value="18">18 Löcher</option><option value="9">9 Löcher</option></select>
-    <div style="margin-top:12px;font-size:12px;color:#4ade80;font-weight:600;">Abschlag-Daten (CR / SR / Par)</div>
+    <select id="nc-holes" onchange="buildHoleTable()">
+      <option value="18">18 Löcher</option>
+      <option value="9">9 Löcher</option>
+    </select>
+    <div style="margin-top:14px;font-size:12px;color:#4ade80;font-weight:600;">Abschlag-Daten (CR / SR / Par)</div>
     <div id="nc-tees"></div>
+    <div style="margin-top:14px;font-size:12px;color:#4ade80;font-weight:600;">Par & SI pro Loch</div>
+    <div style="font-size:11px;color:#6b9e7a;margin-bottom:8px;">SI = Stroke Index (Vorgabenloch-Reihenfolge, 1 = schwerstes Loch)</div>
+    <div id="nc-hole-table" style="overflow-x:auto;"></div>
     <div class="grid2" style="margin-top:10px;">
       <button class="btn btn-dark" onclick="document.getElementById('add-course-form').style.display='none'">Abbrechen</button>
       <button class="btn btn-green" onclick="saveCourse()">✓ Speichern</button>
@@ -137,7 +149,22 @@
     <label class="label">📅 Datum</label>
     <input id="rs-date" type="date"/>
     <label class="label">⛳ Golfplatz</label>
-    <select id="rs-course" onchange="updateTeeOptions()"></select>
+    <div id="course-dropdown-wrap" style="position:relative;">
+      <div id="course-selected-display" onclick="toggleCourseDropdown()"
+        style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:10px;padding:10px 14px;font-size:14px;width:100%;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:42px;">
+        <span id="course-selected-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Platz wählen…</span>
+        <span id="course-dropdown-arrow" style="margin-left:8px;font-size:11px;color:#6b9e7a;flex-shrink:0;">▼</span>
+      </div>
+      <div id="course-dropdown-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#0b1e10;border:1px solid #2d4d38;border-radius:12px;z-index:200;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+        <div style="padding:10px 10px 6px;">
+          <input id="course-search-input" type="text" placeholder="🔍 Suchen…" oninput="filterCourseDropdown()" onclick="event.stopPropagation()"
+            style="background:#060e08;color:#ecfdf5;border:1px solid #2d4d38;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;outline:none;"/>
+        </div>
+        <div id="course-dropdown-list" style="max-height:260px;overflow-y:auto;padding:4px 6px 8px;"></div>
+      </div>
+    </div>
+    <!-- Hidden value carrier so existing code keeps working -->
+    <input type="hidden" id="rs-course" value=""/>
     <label class="label">🔢 Löcher</label>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="tog on" id="btn-9" onclick="setHoles(9)">9 Löcher</button>
@@ -190,13 +217,13 @@
 
 <!-- STATS PAGE -->
 <div id="pg-stats" class="page">
-  <h2>Analyse</h2>
+  <h2 id="stats-h2">Analyse</h2>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="tog on" onclick="showStat('verlauf',this)">📋 Verlauf</button>
-    <button class="tog" onclick="showStat('trend',this)">📈 Trend</button>
-    <button class="tog" onclick="showStat('radar',this)">🎯 Radar</button>
-    <button class="tog" onclick="showStat('tips',this)">💡 Tipps</button>
-    <button class="tog" onclick="showStat('sim',this)">🧮 HCP-Sim</button>
+    <button class="tog on" onclick="showStat('verlauf',this)" id="stab-verlauf">📋 Verlauf</button>
+    <button class="tog" onclick="showStat('trend',this)" id="stab-trend">📈 Trend</button>
+    <button class="tog" onclick="showStat('radar',this)" id="stab-radar">🎯 Radar</button>
+    <button class="tog" onclick="showStat('tips',this)" id="stab-tips">💡 Tipps</button>
+    <button class="tog" onclick="showStat('sim',this)" id="stab-sim">🧮 HCP-Sim</button>
   </div>
   <div id="stat-verlauf"></div>
   <div id="stat-trend" style="display:none;"></div>
@@ -213,7 +240,7 @@
 
 <!-- SERVICE PAGE -->
 <div id="pg-service" class="page">
-  <h2>💬 Service</h2>
+  <h2 id="svc-h2">💬 Service</h2>
   <div class="card" style="margin-bottom:12px;">
     <div style="font-size:13px;color:#6b9e7a;line-height:1.6;">
       Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.
@@ -276,6 +303,219 @@ const CHANGELOG = {
   }
 };
 
+
+// ═══════════════════════════════════════════════════════
+// MEHRSPRACHIGKEIT / MULTILANGUAGE / MULTILINGUA
+// ═══════════════════════════════════════════════════════
+let currentLang = localStorage.getItem('gf_lang') || 'de';
+const LANG = {
+  de:{
+    login:'Einloggen',register:'Registrieren',name:'Name',email:'E-Mail',pin:'PIN / Passwort (min. 4 Zeichen)',
+    btn_login:'Einloggen →',btn_register:'Konto erstellen →',tagline:'Dein persönlicher Golf-Assistent',
+    auth_err:'Bitte alle Felder ausfüllen (PIN min. 4 Zeichen)',auth_created:'Konto erstellt — bitte einloggen.',
+    nav_home:'Home',nav_courses:'Plätze',nav_round:'Runde',nav_stats:'Stats',
+    nav_service:'Service',nav_admin:'Admin',nav_logout:'Logout',
+    last_round:'LETZTE RUNDE',new_round:t('new_round'),
+    rounds:'Runden',avg_netto:'⌀ Netto',best_netto:'Beste Netto',avg_brutto:'⌀ Brutto',best_brutto:'Beste Brutto',
+    netto:'Netto',brutto:'Brutto',strokes:'Schläge',active_round:'AKTIVE RUNDE',
+    courses_title:'Plätze',add_course:'✍️ Platz hinzufügen',course_name:'Platzname',
+    course_loc:'Ort',tee_data:'Abschlag-Daten (CR / SR / Par)',all_shared:'🌐 Alle Plätze für alle Spieler sichtbar',
+    h9:'9 Löcher',h18:'18 Löcher',
+    round_title:'Neue Runde',date_label:'📅 Datum',course_label:'⛳ Golfplatz',
+    holes_title:'🔢 Löcher',tee_title:'🎯 Abschlag',players_title:'👥 Spieler',
+    new_player:'+ Neu',cancel:'Abbrechen',save:'💾 Speichern',start:'▶ Starten',back:'← Zurück',
+    np_name:'Name',np_hcp:'HCP',course_hcp:'Platz-HCP',late_entry:'⚠️ Nachträgliche Erfassung',
+    hole:'Loch',shots_title:'SCHLÄGE (BRUTTO)',
+    fairway_q:'Fairway getroffen?',gir_q:'GIR (Grün in Regulation)?',
+    putts_label:'Putts',bunker_q:'Bunker?',sandsave_q:'Sand Save?',penalty_label:'Penalty / OB',
+    yes:'✓ Ja',no_btn:'✗ Nein',
+    btn_save_round:'🏁 Speichern',btn_discard:'🗑 Abbrechen',
+    confirm_save:'Runde speichern und abschließen?',
+    confirm_discard:'Runde abbrechen und verwerfen?
+Alle eingetragenen Schläge gehen verloren.',
+    miss_where:'Wo daneben?',
+    fw_miss:['Links','Rechts','Bunker','Zu lang','Zu kurz'],
+    gir_miss:['Links','Rechts','Bunker','Zu lang','Zu kurz','Chip daneben'],
+    analysis:'Analyse',verlauf:'📋 Verlauf',trend:'📈 Trend',radar:'🎯 Radar',
+    tips_tab:'💡 Tipps',sim_tab:'🧮 HCP-Sim',
+    key_stats:'Key Stats',all_rounds:'Alle Runden',tap_details:'👆 Tippen für Details',
+    trend_all:'📋 Alle',trend_last10:'🔟 Letzte 10',trend_title:'📈 Trendkurven',
+    fw_pct:'Fairway %',gir_pct:'GIR %',avg_putts:'Ø Putts/Loch',par3_avg:'Par 3 ⌀',par5_avg:'Par 5 ⌀',
+    goal:'Ziel',
+    goal_fw:t('goal_fw'),
+    goal_gir:t('goal_gir'),
+    goal_putts:t('goal_putts'),
+    goal_par3:t('goal_par3'),
+    goal_par5:t('goal_par5'),
+    no_data:'Noch keine Runden.',min2rounds:'Mindestens 2 Runden nötig.',
+    sim_title:'🧮 WHS HCP Simulation',sim_current:'Aktuell',sim_calc:'Berechnet',
+    sim_diffs:'Score Differentials',sim_no_data:'Keine auswertbaren Runden.',
+    tip_driving:'🏌️ Driving: Fairway-Quote unter 50% → Ausrichtung & Schwungtempo üben',
+    tip_approach:'🎯 Approach: GIR unter 40% → Annäherungen mit 7–9-Eisen verbessern',
+    tip_putting:'🟢 Putten: Über 2.1 Putts/Loch → kurze Putts (1–2m) trainieren',
+    tip_par3:'⛳ Par 3: Starke Verluste → Präzision mit kurzen Eisen verbessern',
+    tip_par5:'🦅 Par 5: Verluste → Lagewahl und 3. Schlag verbessern',
+    all_green:'🏆 Alles im grünen Bereich!',
+    gen_tips:'📌 Allgemeine Empfehlungen',
+    gen_tip1:'1× pro Woche 30 Min. Putting-Training',gen_tip2:'Driving Range: 60% Eisen, 40% Holz',
+    gen_tip3:'Vor Runden 15 Min. warm spielen',gen_tip4:'HCP-relevante Runden einreichen',
+    radar_title:'Performance-Radar',r_driving:'Driving',r_gir:'GIR',r_putting:'Putten',r_par3:'Par 3',r_par5:'Par 5',
+    admin_title:'🛡️ Admin',admin_players:'👥 Spieler',admin_courses:'🗺️ Plätze',admin_rounds:'⛳ Runden',
+    all_players:'Alle Spieler',last_rounds:'Letzte Runden',
+    service_title:'💬 Service',
+    service_intro:'Hast du einen Vorschlag, ein Problem oder eine Frage? Schreib uns direkt — der Admin meldet sich so schnell wie möglich.',
+    service_subject:'Betreff',service_msg:'Nachricht',service_send:'📨 Nachricht senden',
+    service_sent:'✅ Nachricht gesendet! Der Admin wird sich melden.',
+    service_history:'Meine gesendeten Nachrichten',service_empty:'Noch keine Nachrichten gesendet.',
+    service_no_msg:'Bitte eine Nachricht eingeben.',
+    s1:'💡 Vorschlag / Idee',s2:'⚠️ Problem / Fehler',s3:'❓ Frage',s4:'🗺️ Platz fehlt / Daten falsch',s5:'📝 Sonstiges',
+    understood:t('understood'),
+    confirm_del_round:'Diese Runde wirklich löschen?',confirm_del_msg:'Nachricht wirklich löschen?',
+    edit_course:'✏️ Platz bearbeiten',edit_hint:'Leer lassen = Abschlag nicht verfügbar',
+    p_saved:'Klicke auf + Neu um Spieler anzulegen.',
+    lang_title:'Sprache / Language / Lingua',
+    brutto_netto:'Brutto / Netto',
+  },
+  en:{
+    login:'Login',register:'Register',name:'Name',email:'Email',pin:'PIN / Password (min. 4 characters)',
+    btn_login:'Login →',btn_register:'Create account →',tagline:'Your personal golf assistant',
+    auth_err:'Please fill in all fields (PIN min. 4 characters)',auth_created:'Account created — please log in.',
+    nav_home:'Home',nav_courses:'Courses',nav_round:'Round',nav_stats:'Stats',
+    nav_service:'Support',nav_admin:'Admin',nav_logout:'Logout',
+    last_round:'LAST ROUND',new_round:'⛳ Start new round',
+    rounds:'Rounds',avg_netto:'⌀ Netto',best_netto:'Best Netto',avg_brutto:'⌀ Gross',best_brutto:'Best Gross',
+    netto:'Netto',brutto:'Gross',strokes:'Strokes',active_round:'ACTIVE ROUND',
+    courses_title:'Courses',add_course:'✍️ Add course',course_name:'Course name',
+    course_loc:'Location',tee_data:'Tee data (CR / SR / Par)',all_shared:'🌐 All courses shared with all players',
+    h9:'9 Holes',h18:'18 Holes',
+    round_title:'New Round',date_label:'📅 Date',course_label:'⛳ Course',
+    holes_title:'🔢 Holes',tee_title:'🎯 Tee',players_title:'👥 Players',
+    new_player:'+ New',cancel:'Cancel',save:'💾 Save',start:'▶ Start',back:'← Back',
+    np_name:'Name',np_hcp:'HCP',course_hcp:'Course HCP',late_entry:'⚠️ Historical entry',
+    hole:'Hole',shots_title:'STROKES (GROSS)',
+    fairway_q:'Fairway hit?',gir_q:'GIR (Green in Regulation)?',
+    putts_label:'Putts',bunker_q:'Bunker?',sandsave_q:'Sand Save?',penalty_label:'Penalty / OB',
+    yes:'✓ Yes',no_btn:'✗ No',
+    btn_save_round:'🏁 Save',btn_discard:'🗑 Discard',
+    confirm_save:'Save and finish round?',
+    confirm_discard:'Discard round?
+All entered strokes will be lost.',
+    miss_where:'Where missed?',
+    fw_miss:['Left','Right','Bunker','Too long','Too short'],
+    gir_miss:['Left','Right','Bunker','Too long','Too short','Chip missed'],
+    analysis:'Analysis',verlauf:'📋 History',trend:'📈 Trend',radar:'🎯 Radar',
+    tips_tab:'💡 Tips',sim_tab:'🧮 HCP-Sim',
+    key_stats:'Key Stats',all_rounds:'All Rounds',tap_details:'👆 Tap for details',
+    trend_all:'📋 All',trend_last10:'🔟 Last 10',trend_title:'📈 Trend charts',
+    fw_pct:'Fairway %',gir_pct:'GIR %',avg_putts:'Avg Putts/Hole',par3_avg:'Par 3 Avg',par5_avg:'Par 5 Avg',
+    goal:'Target',
+    goal_fw:'Drive lands on the fairway',goal_gir:'Green in Regulation (par minus 2)',
+    goal_putts:'Maximum 2 putts per hole',goal_par3:'Bogey or better on par-3 holes',
+    goal_par5:'Almost always par or better on par-5 holes',
+    no_data:'No rounds yet.',min2rounds:'At least 2 rounds needed.',
+    sim_title:'🧮 WHS HCP Simulation',sim_current:'Current',sim_calc:'Calculated',
+    sim_diffs:'Score Differentials',sim_no_data:'No scoreable rounds.',
+    tip_driving:'🏌️ Driving: Fairway rate below 50% → practice alignment & swing tempo',
+    tip_approach:'🎯 Approach: GIR below 40% → improve approach shots with 7–9 irons',
+    tip_putting:'🟢 Putting: Over 2.1 putts/hole → practice short putts (1–2m)',
+    tip_par3:'⛳ Par 3: Big losses → improve precision with short irons',
+    tip_par5:'🦅 Par 5: Losses → improve course management & 3rd shot',
+    all_green:'🏆 All in the green zone!',
+    gen_tips:'📌 General recommendations',
+    gen_tip1:'1× per week 30 min putting practice',gen_tip2:'Driving range: 60% irons, 40% woods',
+    gen_tip3:'15 min warm-up before rounds',gen_tip4:'Submit all HCP-relevant rounds',
+    radar_title:'Performance Radar',r_driving:'Driving',r_gir:'GIR',r_putting:'Putting',r_par3:'Par 3',r_par5:'Par 5',
+    admin_title:'🛡️ Admin',admin_players:'👥 Players',admin_courses:'🗺️ Courses',admin_rounds:'⛳ Rounds',
+    all_players:'All Players',last_rounds:'Recent Rounds',
+    service_title:'💬 Support',
+    service_intro:'Do you have a suggestion, problem or question? Write to us directly — the admin will get back to you.',
+    service_subject:'Subject',service_msg:'Message',service_send:'📨 Send message',
+    service_sent:'✅ Message sent! The admin will reply.',
+    service_history:'My sent messages',service_empty:'No messages sent yet.',
+    service_no_msg:'Please enter a message.',
+    s1:'💡 Suggestion / Idea',s2:'⚠️ Problem / Bug',s3:'❓ Question',s4:'🗺️ Course missing / wrong data',s5:'📝 Other',
+    understood:"✓ Got it — let's go!",
+    confirm_del_round:'Really delete this round?',confirm_del_msg:'Really delete this message?',
+    edit_course:'✏️ Edit course',edit_hint:'Leave empty = tee not available',
+    p_saved:'Click + New to add players.',
+    lang_title:'Sprache / Language / Lingua',
+    brutto_netto:'Gross / Netto',
+  },
+  it:{
+    login:'Accedi',register:'Registrati',name:'Nome',email:'Email',pin:'PIN / Password (min. 4 caratteri)',
+    btn_login:'Accedi →',btn_register:'Crea account →',tagline:'Il tuo assistente golf personale',
+    auth_err:'Compila tutti i campi (PIN min. 4 caratteri)',auth_created:'Account creato — effettua il login.',
+    nav_home:'Home',nav_courses:'Percorsi',nav_round:'Giro',nav_stats:'Statistiche',
+    nav_service:'Supporto',nav_admin:'Admin',nav_logout:'Esci',
+    last_round:'ULTIMO GIRO',new_round:'⛳ Inizia nuovo giro',
+    rounds:'Giri',avg_netto:'⌀ Netto',best_netto:'Miglior Netto',avg_brutto:'⌀ Lordo',best_brutto:'Miglior Lordo',
+    netto:'Netto',brutto:'Lordo',strokes:'Colpi',active_round:'GIRO ATTIVO',
+    courses_title:'Percorsi',add_course:'✍️ Aggiungi percorso',course_name:'Nome percorso',
+    course_loc:'Località',tee_data:'Dati tee (CR / SR / Par)',all_shared:'🌐 Tutti i percorsi condivisi',
+    h9:'9 Buche',h18:'18 Buche',
+    round_title:'Nuovo Giro',date_label:'📅 Data',course_label:'⛳ Percorso',
+    holes_title:'🔢 Buche',tee_title:'🎯 Tee',players_title:'👥 Giocatori',
+    new_player:'+ Nuovo',cancel:'Annulla',save:'💾 Salva',start:'▶ Inizia',back:'← Indietro',
+    np_name:'Nome',np_hcp:'HCP',course_hcp:'HCP Percorso',late_entry:'⚠️ Inserimento retroattivo',
+    hole:'Buca',shots_title:'COLPI (LORDO)',
+    fairway_q:'Fairway raggiunto?',gir_q:'GIR (Green in Regolazione)?',
+    putts_label:'Putt',bunker_q:'Bunker?',sandsave_q:'Sand Save?',penalty_label:'Penalità / OB',
+    yes:'✓ Sì',no_btn:'✗ No',
+    btn_save_round:'🏁 Salva',btn_discard:'🗑 Annulla',
+    confirm_save:'Salvare e concludere il giro?',
+    confirm_discard:'Annullare il giro?
+Tutti i colpi inseriti andranno persi.',
+    miss_where:'Dove?',
+    fw_miss:['Sinistra','Destra','Bunker','Troppo lungo','Troppo corto'],
+    gir_miss:['Sinistra','Destra','Bunker','Troppo lungo','Troppo corto','Chip mancato'],
+    analysis:'Analisi',verlauf:'📋 Storico',trend:'📈 Trend',radar:'🎯 Radar',
+    tips_tab:'💡 Consigli',sim_tab:'🧮 Sim HCP',
+    key_stats:'Statistiche chiave',all_rounds:'Tutti i giri',tap_details:'👆 Tocca per dettagli',
+    trend_all:'📋 Tutti',trend_last10:'🔟 Ultimi 10',trend_title:'📈 Grafici di tendenza',
+    fw_pct:'Fairway %',gir_pct:'GIR %',avg_putts:'Media Putt/Buca',par3_avg:'Par 3 Media',par5_avg:'Par 5 Media',
+    goal:'Obiettivo',
+    goal_fw:'Il drive atterra sul fairway',goal_gir:'Green in Regolazione (par meno 2)',
+    goal_putts:'Massimo 2 putt per buca',goal_par3:'Bogey o meglio sulle buche par 3',
+    goal_par5:'Quasi sempre par o meglio sulle buche par 5',
+    no_data:'Ancora nessun giro.',min2rounds:'Servono almeno 2 giri.',
+    sim_title:'🧮 Simulazione HCP WHS',sim_current:'Attuale',sim_calc:'Calcolato',
+    sim_diffs:'Differenziali di punteggio',sim_no_data:'Nessun giro valutabile.',
+    tip_driving:'🏌️ Driving: Fairway sotto 50% → esercitare allineamento e ritmo',
+    tip_approach:'🎯 Approccio: GIR sotto 40% → migliorare avvicinamenti con ferro 7–9',
+    tip_putting:'🟢 Putt: Oltre 2.1 putt/buca → allenare putt corti (1–2m)',
+    tip_par3:'⛳ Par 3: Grandi perdite → migliorare precisione con ferri corti',
+    tip_par5:'🦅 Par 5: Perdite → migliorare gestione percorso e 3° colpo',
+    all_green:'🏆 Tutto nella zona verde!',
+    gen_tips:'📌 Raccomandazioni generali',
+    gen_tip1:'Almeno 1× a settimana 30 min di putting',gen_tip2:'Driving range: 60% ferri, 40% legni',
+    gen_tip3:'15 min riscaldamento prima dei giri',gen_tip4:'Consegnare tutti i giri rilevanti HCP',
+    radar_title:'Radar delle prestazioni',r_driving:'Driving',r_gir:'GIR',r_putting:'Putting',r_par3:'Par 3',r_par5:'Par 5',
+    admin_title:'🛡️ Admin',admin_players:'👥 Giocatori',admin_courses:'🗺️ Percorsi',admin_rounds:'⛳ Giri',
+    all_players:'Tutti i giocatori',last_rounds:'Ultimi giri',
+    service_title:'💬 Supporto',
+    service_intro:"Hai un suggerimento, un problema o una domanda? Scrivici — l'admin risponderà il prima possibile.",
+    service_subject:'Oggetto',service_msg:'Messaggio',service_send:'📨 Invia messaggio',
+    service_sent:"✅ Messaggio inviato! L'admin risponderà.",
+    service_history:'I miei messaggi',service_empty:'Nessun messaggio inviato.',
+    service_no_msg:'Inserisci un messaggio.',
+    s1:'💡 Suggerimento / Idea',s2:'⚠️ Problema / Bug',s3:'❓ Domanda',s4:'🗺️ Percorso mancante',s5:'📝 Altro',
+    understood:'✓ Capito — andiamo!',
+    confirm_del_round:'Eliminare davvero questo giro?',confirm_del_msg:'Eliminare davvero questo messaggio?',
+    edit_course:'✏️ Modifica percorso',edit_hint:'Lascia vuoto = tee non disponibile',
+    p_saved:'Clicca + Nuovo per aggiungere giocatori.',
+    lang_title:'Sprache / Language / Lingua',
+    brutto_netto:'Lordo / Netto',
+  }
+};
+function t(k){return LANG[currentLang]?.[k]??LANG.de[k]??k;}
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('gf_lang',lang);
+  const active=document.querySelector('.page.active')?.id;
+  if(active) showPage(active);
+  renderAuthPage();
+}
+
 const TEE = {
   yellow:{label:"Gelb",bg:"#fbbf24",fg:"#0f172a"},
   green: {label:"Grün",bg:"#4ade80",fg:"#0f172a"},
@@ -328,7 +568,7 @@ function showPage(id) {
   if (id === 'pg-round') renderRoundPage();
   if (id === 'pg-admin') renderAdmin();
   if (id === 'pg-home') renderHome();
-  if (id === 'pg-service') renderServiceHistory();
+  if (id === 'pg-service') { renderServicePage(); renderServiceHistory(); }
 }
 
 function teeChip(t) {
@@ -415,6 +655,10 @@ async function editHcp() {
 function renderHome() {
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
+  [['lbl-rounds','rounds'],['lbl-avg-netto','avg_netto'],['lbl-best-netto','best_netto'],
+   ['lbl-avg-brutto','avg_brutto'],['lbl-best-brutto','best_brutto']].forEach(([id,key])=>{
+    const el=document.getElementById(id); if(el) el.textContent=t(key);
+  });
   $('stat-rounds').textContent = rounds.length;
   const nets   = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
   const bruttos = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0);
@@ -461,6 +705,7 @@ function renderHome() {
 
 // ── COURSES ──
 function renderCourses() {
+  const ch2=document.getElementById('courses-h2'); if(ch2) ch2.textContent=t('courses_title');
   $('courses-list').innerHTML = courses.map(c => `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -488,9 +733,36 @@ function renderCourses() {
     </div>`).join('');
 }
 
+function buildHoleTable() {
+  const n = parseInt($('nc-holes').value)||18;
+  const tbl = $('nc-hole-table');
+  if (!tbl) return;
+  let rows = '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  rows += '<thead><tr style="border-bottom:1px solid #4ade80;">';
+  rows += '<th style="padding:5px;color:#4ade80;text-align:center;">Loch</th>';
+  rows += '<th style="padding:5px;color:#4ade80;text-align:center;">Par</th>';
+  rows += '<th style="padding:5px;color:#4ade80;text-align:center;">SI</th>';
+  rows += '<th style="padding:5px;color:#4ade80;text-align:center;">Dist (m)</th>';
+  rows += '</tr></thead><tbody>';
+  for (let i=1; i<=n; i++) {
+    rows += `<tr style="border-bottom:1px solid #173320;">
+      <td style="padding:4px;text-align:center;color:#6b9e7a;font-weight:600;">${i}</td>
+      <td style="padding:4px;"><input type="number" id="nc-par-${i}" value="4" min="3" max="6" style="width:52px;padding:4px;text-align:center;"/></td>
+      <td style="padding:4px;"><input type="number" id="nc-si-${i}" value="${i}" min="1" max="${n}" style="width:52px;padding:4px;text-align:center;"/></td>
+      <td style="padding:4px;"><input type="number" id="nc-dist-${i}" value="300" min="50" max="800" style="width:64px;padding:4px;text-align:center;"/></td>
+    </tr>`;
+  }
+  rows += '</tbody></table>';
+  tbl.innerHTML = rows;
+}
+
 function showAddCourse() {
-  $('add-course-form').style.display = $('add-course-form').style.display==='none'?'block':'none';
-  renderCourses();
+  const form = $('add-course-form');
+  form.style.display = form.style.display==='none'?'block':'none';
+  if (form.style.display==='block') {
+    renderCourses();
+    buildHoleTable();
+  }
 }
 
 async function saveCourse() {
@@ -498,11 +770,21 @@ async function saveCourse() {
   if (!name) { alert('Bitte Platzname eingeben'); return; }
   const tees = {};
   Object.keys(TEE).forEach(k => {
-    const cr = $(`nc-${k}-cr`)?.value;
-    if (cr) tees[k] = {cr:parseFloat(cr),sr:parseInt($(`nc-${k}-sr`)?.value)||113,par:parseInt($(`nc-${k}-par`)?.value)||72};
+    const cr = document.getElementById(`nc-${k}-cr`)?.value;
+    if (cr) tees[k] = {cr:parseFloat(cr),sr:parseInt(document.getElementById(`nc-${k}-sr`)?.value)||113,par:parseInt(document.getElementById(`nc-${k}-par`)?.value)||72};
   });
-  const holes = parseInt($('nc-holes').value)||18;
-  const nc = {id:genId(),name,location:$('nc-loc').value,tees,holes:Array.from({length:holes},(_,i)=>({par:4,si:i+1,dist:300}))};
+  const numHoles = parseInt($('nc-holes').value)||18;
+  // Read hole data from table
+  const holes = Array.from({length:numHoles},(_,i)=>{
+    const h = i+1;
+    return {
+      holeNum: h,
+      par:  parseInt(document.getElementById(`nc-par-${h}`)?.value)||4,
+      si:   parseInt(document.getElementById(`nc-si-${h}`)?.value)||h,
+      dist: parseInt(document.getElementById(`nc-dist-${h}`)?.value)||300
+    };
+  });
+  const nc = {id:genId(),name,location:$('nc-loc').value,tees,holes};
   await sb.from('courses').insert({...nc,is_preset:false,created_by:currentUser.id});
   courses.push({...nc,is_preset:false,created_by:currentUser.id});
   $('add-course-form').style.display='none';
@@ -588,7 +870,7 @@ function renderRoundPage() {
     $('round-setup-form').style.display = 'none';
     $('hole-entry').style.display = 'none';
   } else {
-    $('round-page-title').textContent = 'Neue Runde';
+    $('round-page-title').textContent = t('round_title');
     $('round-active-banner').innerHTML = '';
     $('round-setup-form').style.display = 'block';
     $('hole-entry').style.display = 'none';
@@ -620,13 +902,127 @@ function discardFromEntry() {
   $('hole-entry').style.display = 'none';
   $('round-setup-form').style.display = 'block';
   $('round-active-banner').innerHTML = '';
-  $('round-page-title').textContent = 'Neue Runde';
+  $('round-page-title').textContent = t('round_title');
   renderRoundPage();
   showPage('pg-home');
 }
 
+// ── COURSE DROPDOWN ──
+function getPinnedCourses() {
+  try { return JSON.parse(localStorage.getItem('gf_pinned_courses')||'[]'); } catch{ return []; }
+}
+function togglePinCourse(id, e) {
+  e.stopPropagation();
+  const pins = getPinnedCourses();
+  const idx = pins.indexOf(id);
+  if (idx>=0) pins.splice(idx,1); else pins.unshift(id);
+  localStorage.setItem('gf_pinned_courses', JSON.stringify(pins));
+  buildCourseDropdownList($('course-search-input')?.value||'');
+}
+function getCourseUsageStats() {
+  // count how often each course appears in rounds + last played date
+  const stats = {};
+  rounds.forEach(r => {
+    if (!r.course_id) return;
+    if (!stats[r.course_id]) stats[r.course_id] = {count:0, last:''};
+    stats[r.course_id].count++;
+    const d = r.played_at||r.created_at||'';
+    if (d > stats[r.course_id].last) stats[r.course_id].last = d;
+  });
+  return stats;
+}
+function sortedCourses() {
+  const pins = getPinnedCourses();
+  const usage = getCourseUsageStats();
+  return [...courses].sort((a,b) => {
+    const aPin = pins.includes(a.id), bPin = pins.includes(b.id);
+    if (aPin !== bPin) return aPin ? -1 : 1;
+    const aU = usage[a.id]||{count:0,last:''};
+    const bU = usage[b.id]||{count:0,last:''};
+    // by count desc, then last played desc, then name asc
+    if (bU.count !== aU.count) return bU.count - aU.count;
+    if (bU.last !== aU.last) return bU.last > aU.last ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
+}
+function buildCourseDropdownList(filter) {
+  const pins = getPinnedCourses();
+  const usage = getCourseUsageStats();
+  const sorted = sortedCourses();
+  const q = (filter||'').toLowerCase();
+  const filtered = q ? sorted.filter(c=>c.name.toLowerCase().includes(q)||c.location?.toLowerCase().includes(q)) : sorted;
+  const currentVal = $('rs-course').value;
+  if (!currentVal && filtered.length) {
+    // auto-select first on initial render
+    selectCourse(filtered[0].id, filtered[0].name);
+  }
+  $('course-dropdown-list').innerHTML = filtered.map(c => {
+    const isPinned = pins.includes(c.id);
+    const u = usage[c.id];
+    const isSel = c.id === $('rs-course').value;
+    let badge = '';
+    if (isPinned) badge = '<span style="font-size:10px;color:#fbbf24;margin-left:4px;">📌</span>';
+    else if (u?.count >= 3) badge = `<span style="font-size:10px;color:#4ade80;margin-left:4px;">⭐ ${u.count}×</span>`;
+    else if (u?.count >= 1) badge = `<span style="font-size:10px;color:#6b9e7a;margin-left:4px;">${u.count}×</span>`;
+    return `
+      <div onclick="selectCourse('${c.id}','${c.name.replace(/'/g,"\\'")}');event.stopPropagation()"
+        style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:8px;cursor:pointer;background:${isSel?'#22c55e22':'transparent'};border:1px solid ${isSel?'#4ade80':'transparent'};margin-bottom:3px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:${isSel?'700':'500'};color:${isSel?'#4ade80':'#ecfdf5'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${c.name}${badge}
+          </div>
+          ${c.location?`<div style="font-size:11px;color:#6b9e7a;">${c.location}</div>`:''}
+        </div>
+        <button onclick="togglePinCourse('${c.id}',event)"
+          title="${isPinned?'Entpinnen':'Anpinnen'}"
+          style="background:transparent;border:none;cursor:pointer;font-size:16px;padding:2px 4px;color:${isPinned?'#fbbf24':'#2d4d38'};flex-shrink:0;">
+          📌
+        </button>
+      </div>`;
+  }).join('') || '<div style="color:#6b9e7a;font-size:13px;padding:12px 8px;">Kein Platz gefunden.</div>';
+}
+function selectCourse(id, name) {
+  $('rs-course').value = id;
+  $('course-selected-label').textContent = name;
+  closeCourseDropdown();
+  updateTeeOptions();
+}
+function toggleCourseDropdown() {
+  const panel = $('course-dropdown-panel');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    $('course-dropdown-arrow').textContent = '▲';
+    buildCourseDropdownList('');
+    $('course-search-input').value = '';
+    $('course-search-input').focus();
+    // close on outside click
+    setTimeout(()=>document.addEventListener('click', outsideDropdownClick), 0);
+  } else {
+    closeCourseDropdown();
+  }
+}
+function closeCourseDropdown() {
+  $('course-dropdown-panel').style.display = 'none';
+  $('course-dropdown-arrow').textContent = '▼';
+  document.removeEventListener('click', outsideDropdownClick);
+}
+function outsideDropdownClick(e) {
+  if (!$('course-dropdown-wrap').contains(e.target)) closeCourseDropdown();
+}
+function filterCourseDropdown() {
+  buildCourseDropdownList($('course-search-input').value);
+}
 function renderCourseSelect() {
-  $('rs-course').innerHTML = courses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  // pick smart default: first pinned, or most-used, or first
+  const currentVal = $('rs-course').value;
+  const sorted = sortedCourses();
+  if (!currentVal || !courses.find(c=>c.id===currentVal)) {
+    const first = sorted[0];
+    if (first) {
+      $('rs-course').value = first.id;
+      $('course-selected-label').textContent = first.name;
+    }
+  }
   updateTeeOptions();
 }
 
@@ -821,7 +1217,7 @@ function renderHoleCard() {
         </div>
       </div>
       <div style="margin-bottom:14px;">
-        <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:8px;">SCHLÄGE (BRUTTO)</div>
+        <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:1px;margin-bottom:8px;">${t('shots_title')}</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn btn-dark" style="width:44px;height:44px;font-size:22px;padding:0;" onclick="changeScore(-1)">−</button>
           <div style="flex:1;text-align:center;font-size:48px;font-weight:700;color:${scoreColor};line-height:1;">${hole.gross||'—'}</div>
@@ -832,10 +1228,10 @@ function renderHoleCard() {
       <div id="hole-stats">
         ${hole.par!==3?`
           <div class="row"><span class="muted">Fairway getroffen?</span><div><button class="tog${hole.fairway===true?' on':''}" onclick="setHoleStat('fairway',true)">✓ Ja</button> <button class="tog${hole.fairway===false?' no':''}" onclick="setHoleStat('fairway',false)">✗ Nein</button></div></div>
-          ${hole.fairway===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${['Links','Rechts','Bunker','Zu lang','Zu kurz'].map(m=>`<button class="tog${hole.fairwayMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('fairwayMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
+          ${hole.fairway===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('fw_miss').map(m=>`<button class="tog${hole.fairwayMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('fairwayMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
         `:''}
         <div class="row"><span class="muted">GIR (Grün in Regulation)?</span><div><button class="tog${hole.gir===true?' on':''}" onclick="setHoleStat('gir',true)">✓ Ja</button> <button class="tog${hole.gir===false?' no':''}" onclick="setHoleStat('gir',false)">✗ Nein</button></div></div>
-        ${hole.gir===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${['Links','Rechts','Bunker','Zu lang','Zu kurz','Chip daneben'].map(m=>`<button class="tog${hole.girMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('girMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
+        ${hole.gir===false?`<div style="padding:6px 0;border-bottom:1px solid #2d4d38;"><span class="muted" style="font-size:11px;">Wo daneben?</span><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">${t('gir_miss').map(m=>`<button class="tog${hole.girMiss===m?' on':''}" style="font-size:11px;padding:4px 8px;" onclick="setHoleStat('girMiss','${m}')">${m}</button>`).join('')}</div></div>`:''}
         <div class="row"><span class="muted">Putts</span><div style="display:flex;gap:5px;">${[0,1,2,3,4].map(n=>`<button class="hole-btn${hole.putts===n?' active':''}" style="width:36px;height:36px;" onclick="setHoleStat('putts',${n})">${n}</button>`).join('')}</div></div>
         <div class="row"><span class="muted">Bunker?</span><div><button class="tog${hole.bunker===true?' on':''}" onclick="setHoleStat('bunker',true)">✓ Ja</button> <button class="tog${hole.bunker===false?' no':''}" onclick="setHoleStat('bunker',false)">✗ Nein</button></div></div>
         ${hole.bunker?`<div class="row"><span class="muted">Sand Save?</span><div><button class="tog${hole.sandSave===true?' on':''}" onclick="setHoleStat('sandSave',true)">✓ Ja</button> <button class="tog${hole.sandSave===false?' no':''}" onclick="setHoleStat('sandSave',false)">✗ Nein</button></div></div>`:''}
@@ -899,7 +1295,13 @@ function showStat(id, btn) {
   renderStatSection(id);
 }
 
-function renderStats() { renderStatSection('verlauf'); }
+function renderStats() {
+  [['verlauf','verlauf'],['trend','trend'],['radar','radar'],['tips','tips_tab'],['sim','sim_tab']].forEach(([id,key])=>{
+    const el=document.getElementById('stab-'+id); if(el) el.textContent=t(key);
+  });
+  const h2=document.getElementById('stats-h2'); if(h2) h2.textContent=t('analysis');
+  renderStatSection('verlauf');
+}
 
 function renderStatSection(id) {
   const norm = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
@@ -917,11 +1319,11 @@ function renderStatSection(id) {
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
         ${[
-          ['Fairway %',''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','≥ 60%','Abschlag landet auf dem Fairway'],
-          ['GIR %',''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%','Grün in Regulation (Par minus 2 Schläge)'],
-          ['Ø Putts/Loch',avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','≤ 2.0','Maximal 2 Putts pro Loch'],
-          ['Par 3 ⌀','+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','< 1.0','Bogey oder besser auf Par-3-Löchern'],
-          ['Par 5 ⌀','+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','< 0.5','Fast immer Par oder besser auf Par-5-Löchern'],
+          [t('fw_pct'),''+fwPct+'%',fwPct>=60?'#4ade80':fwPct>=45?'#fbbf24':'#f87171','≥ 60%',t('goal_fw')],
+          [t('gir_pct'),''+girPct+'%',girPct>=50?'#4ade80':girPct>=35?'#fbbf24':'#f87171','≥ 50%',t('goal_gir')],
+          [t('avg_putts'),avgPutts.toFixed(2),avgPutts<=2?'#4ade80':avgPutts<=2.2?'#fbbf24':'#f87171','≤ 2.0',t('goal_putts')],
+          [t('par3_avg'),'+'+avgOver(byPar(3)).toFixed(2),avgOver(byPar(3))<=0.8?'#4ade80':avgOver(byPar(3))<=1.3?'#fbbf24':'#f87171','< 1.0',t('goal_par3')],
+          [t('par5_avg'),'+'+avgOver(byPar(5)).toFixed(2),avgOver(byPar(5))<=0.5?'#4ade80':avgOver(byPar(5))<=1.0?'#fbbf24':'#f87171','< 0.5',t('goal_par5')],
         ].map(([l,v,c,z,desc])=>`<div class="row"><div><div style="font-size:13px;color:${c};font-weight:600;">${l} — ${v}</div><div class="muted" style="font-size:10px;">Ziel: ${z} <span style="color:#4ade8088;">(${desc})</span></div></div></div>`).join('')}
       </div>
 <div class="card" style="margin-top:10px;">
@@ -998,7 +1400,7 @@ function renderStatSection(id) {
     const girA=allSc.filter(h=>h.gir!==null);const gir=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):0;
     const puttA=allSc.filter(h=>h.putts!=null);const ap=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:2;
     const tips=[];
-    if(fw<50) tips.push('🏌️ <b>Driving:</b> Fairway-Quote unter 50% → Ausrichtung & Schwungtempo auf der Range üben');
+    if(fw<50) tips.push(t('tip_driving'));
     if(gir<40) tips.push('🎯 <b>Approach:</b> GIR unter 40% → Annäherungen mit 7–9-Eisen trainieren');
     if(ap>2.1)  tips.push('🟢 <b>Putten:</b> Über 2.1 Putts/Loch → kurze Putts (1–2m) auf dem Grün üben');
     if(avgOver(byPar(3))>1) tips.push('⛳ <b>Par 3:</b> Starke Verluste → Präzision mit kurzen Eisen verbessern');
@@ -1028,7 +1430,7 @@ function renderStatSection(id) {
     const curHcp = best8.length ? parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length*0.96).toFixed(1)) : null;
     $('stat-sim').innerHTML = `
       <div class="card" style="margin-bottom:10px;">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:12px;">🧮 WHS HCP Simulation</div>
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:12px;">${t('sim_title')}</div>
         <div class="grid3" style="text-align:center;margin-bottom:10px;">
           <div class="stat-box"><div class="big-num">${parseFloat(currentProfile?.hcp_index||18).toFixed(1)}</div><div class="muted" style="font-size:10px;">Aktuell</div></div>
           <div class="stat-box" style="display:flex;align-items:center;justify-content:center;"><div style="font-size:24px;color:#2d4d38;">→</div></div>
@@ -1038,7 +1440,7 @@ function renderStatSection(id) {
         ${withDiff.some(r=>(r.numHoles||18)<=9)?'<div style="font-size:10px;color:#fbbf24;text-align:center;margin-top:4px;">⚠️ 9-Loch Runden als 18-Loch-Äquivalent berechnet</div>':''}
       </div>
       <div class="card">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">Score Differentials</div>
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">${t('sim_diffs')}</div>
         ${withDiff.map((r,i)=>{
   const t=r.totals?.[r.players?.[0]?.id]||{};
   const isBest=allDiffs.indexOf(r.diff)<8;
@@ -1103,6 +1505,11 @@ async function sendServiceMessage() {
   }
 }
 
+async function renderServicePage() {
+  const h2=document.getElementById('svc-h2'); if(h2) h2.textContent=t('service_title');
+  const sel=document.getElementById('svc-subject'); 
+  if(sel) sel.innerHTML=[['s1','Vorschlag'],['s2','Problem'],['s3','Frage'],['s4','Platz fehlt'],['s5','Sonstiges']].map(([k,v])=>`<option value="${v}">${t(k)}</option>`).join('');
+}
 async function renderServiceHistory() {
   const list = document.getElementById('svc-history-list');
   if (!list) return;
