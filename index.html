@@ -567,9 +567,9 @@ let authMode = 'login';
 function authTab(m) {
   authMode = m;
   $('reg-fields').style.display = m==='login'?'none':'block';
-  $('auth-btn').textContent = m==='login'?'Einloggen →':'Konto erstellen →';
   $('tab-login').className = 'btn btn-sm '+(m==='login'?'btn-green':'btn-dark');
   $('tab-reg').className = 'btn btn-sm '+(m==='reg'?'btn-green':'btn-dark');
+  renderAuthPage();
 }
 authTab('login');
 
