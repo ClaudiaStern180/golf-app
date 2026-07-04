@@ -528,6 +528,7 @@ const TEE = {
 let sb, currentUser, currentProfile;
 let courses = [], rounds = [], savedPlayers = [];
 let activeRound = null;
+let holeFilter = 'all'; // 'all' | '9' | '18'
 let selectedPlayerIds = [];
 let selectedTee = "yellow";
 let selectedHoles = 9;
@@ -660,12 +661,12 @@ function renderHome() {
     const el=document.getElementById(id); if(el) el.textContent=t(key);
   });
   $('stat-rounds').textContent = rounds.length;
-  const nets   = rounds.slice(0,5).map(r=>{const f=(r.num_holes||r.numHoles||18)<=9?2:1;return Math.round((r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)*f);});
-  const bruttos = rounds.slice(0,5).map(r=>{const f=(r.num_holes||r.numHoles||18)<=9?2:1;return Math.round((r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0)*f);});
+  const nets   = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0);
+  const bruttos = rounds.slice(0,5).map(r=>r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0);
   $('stat-avg').textContent  = nets.length    ? (nets.reduce((a,b)=>a+b,0)/nets.length).toFixed(1)    : '—';
-  $('stat-best').textContent = rounds.length  ? Math.max(...rounds.map(r=>{const f=(r.num_holes||r.numHoles||18)<=9?2:1;return Math.round((r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)*f);}))   : '—';
+  $('stat-best').textContent = rounds.length  ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.nettoStableford||0)) : '—';
   $('stat-avg-brutto').textContent  = bruttos.length ? (bruttos.reduce((a,b)=>a+b,0)/bruttos.length).toFixed(1) : '—';
-  $('stat-best-brutto').textContent = rounds.length  ? Math.max(...rounds.map(r=>{const f=(r.num_holes||r.numHoles||18)<=9?2:1;return Math.round((r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0)*f);})) : '—';
+  $('stat-best-brutto').textContent = rounds.length  ? Math.max(...rounds.map(r=>r.totals?.[r.players?.[0]?.id]?.bruttoStableford||0)) : '—';
 
   if (activeRound) {
     $('home-active-round').innerHTML = `
@@ -1247,7 +1248,9 @@ function renderStatSection(id) {
             <button class="tog" id="trend-btn-last10" onclick="setTrendMode('last10')" style="font-size:11px;padding:4px 10px;">🔟 Letzte 10</button>
           </div>
         </div>
-        <div id="trend-content">${renderTrendCharts(sorted,'alle')}</div>
+        <div id="trend-content">
+        <div id="trend-chart-area">${renderTrendCharts(sorted,'alle')}</div>
+      </div>
       </div>`;
     return;
   }
@@ -1445,17 +1448,14 @@ function buildTrendCharts(norm, mode) {
     const fwA=sc.filter(h=>h.par!==3&&h.fairway!==null);
     const girA=sc.filter(h=>h.gir!==null);
     const puttA=sc.filter(h=>h.putts!=null);
-    const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
-    // Normalize 9-hole rounds to 18-hole equivalent (×2)
-    const is9 = (r.numHoles||r.num_holes||18) <= 9;
-    const factor = is9 ? 2 : 1;
+    const p=r.players?.[0]; const tot=r.totals?.[p?.id]||{};
     return {
       fw:   fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):null,
       gir:  girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):null,
       putts:puttA.length?parseFloat((puttA.reduce((s,h)=>s+h.putts,0)/puttA.length).toFixed(1)):null,
-      netto:  Math.round((t.nettoStableford||0)  * factor),
-      brutto: Math.round((t.bruttoStableford||0) * factor),
-      is9,
+      netto:  tot.nettoStableford||0,
+      brutto: tot.bruttoStableford||0,
+      holes: r.numHoles||r.num_holes||18,
     };
   };
 
@@ -1478,11 +1478,9 @@ function buildTrendCharts(norm, mode) {
 
   if (trendData.length < 2) return '<div class="muted" style="font-size:12px;padding:8px 0;">Noch zu wenig Daten.</div>';
 
-  const has9 = trendData.some(d=>d.is9);
-  const suffix9 = has9 ? ' ⟨18L-äquiv.⟩' : '';
   const charts = [
-    ['Netto Stableford Pkt.'+suffix9,'netto','#4ade80',undefined,undefined,' Pkt.'],
-    ['Brutto Stableford Pkt.'+suffix9,'brutto','#fb923c',undefined,undefined,' Pkt.'],
+    ['Netto Stableford Pkt.','netto','#4ade80',undefined,undefined,' Pkt.'],
+    ['Brutto Stableford Pkt.','brutto','#fb923c',undefined,undefined,' Pkt.'],
     ['Fairway % (Ziel: 60%)','fw','#fbbf24',0,100,'%'],
     ['GIR % (Ziel: 50%)','gir','#60a5fa',0,100,'%'],
     ['Ø Putts/Loch (Ziel: 2.0)','putts','#f87171',1,3,''],
