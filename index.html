@@ -491,12 +491,29 @@ const LANG = {
   }
 };
 function t(k){return LANG[currentLang]?.[k]??LANG.de[k]??k;}
+function renderAuthPage() {
+  ['de','en','it'].forEach(l => {
+    const btn = document.getElementById('lang-btn-'+l);
+    if(btn) btn.style.borderColor = currentLang===l ? '#4ade80' : '#2d4d38';
+  });
+  const el = id => document.getElementById(id);
+  if(el('auth-tagline'))   el('auth-tagline').textContent   = t('tagline');
+  if(el('tab-login'))      el('tab-login').textContent      = t('login');
+  if(el('tab-reg'))        el('tab-reg').textContent        = t('register');
+  if(el('auth-lbl-name'))  el('auth-lbl-name').textContent  = t('name');
+  if(el('auth-lbl-email')) el('auth-lbl-email').textContent = t('email');
+  if(el('auth-lbl-pin'))   el('auth-lbl-pin').textContent   = t('pin');
+  if(el('auth-btn'))       el('auth-btn').textContent       = authMode==='login' ? t('btn_login') : t('btn_register');
+}
 function setLang(lang){
   currentLang=lang;
   localStorage.setItem('gf_lang',lang);
+  document.querySelectorAll('.nav-lbl[data-key]').forEach(el=>{
+    el.textContent=t(el.getAttribute('data-key'));
+  });
+  renderAuthPage();
   const active=document.querySelector('.page.active')?.id;
   if(active) showPage(active);
-  renderAuthPage();
 }
 
 const TEE = {
