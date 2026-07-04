@@ -528,7 +528,8 @@ const TEE = {
 let sb, currentUser, currentProfile;
 let courses = [], rounds = [], savedPlayers = [];
 let activeRound = null;
-let holeFilter = 'all'; // 'all' | '9' | '18'
+let holeFilter = 'all';
+let _trendMode = 'alle'; // 'all' | '9' | '18'
 let selectedPlayerIds = [];
 let selectedTee = "yellow";
 let selectedHoles = 9;
@@ -1439,26 +1440,28 @@ function setHoleFilter(f) {
   applyTrendFilter();
 }
 function applyTrendFilter() {
-  if(!_trendNorm) return;
-  const filtered = _trendNorm.filter(r=>{
-    const h=r.numHoles||r.num_holes||18;
-    if(holeFilter==='9')  return h<=9;
-    if(holeFilter==='18') return h>=18;
+  if(!_trendNorm || !_trendNorm.length) return;
+  const mode = _trendMode || 'alle';
+  let data = mode === 'last10' ? _trendNorm.slice(-10) : _trendNorm;
+  data = data.filter(r => {
+    const h = r.numHoles || r.num_holes || 18;
+    if (holeFilter==='9')  return h <= 9;
+    if (holeFilter==='18') return h >= 18;
     return true;
   });
   const area = document.getElementById('trend-chart-area');
-  if(!area) return;
-  area.innerHTML = filtered.length<2
-    ? '<div class="muted" style="padding:12px;font-size:12px;">'+t('min2rounds')+'</div>'
-    : buildTrendCharts(filtered, _trendMode||'alle');
+  if (!area) return;
+  area.innerHTML = data.length < 2
+    ? '<div class="muted" style="padding:12px;font-size:12px;">' + t('min2rounds') + '</div>'
+    : buildTrendCharts(data, mode);
 }
 function setTrendMode(mode) {
+  _trendMode = mode;
   ['alle','last10'].forEach(m => {
     const btn = document.getElementById('trend-btn-'+m);
     if (btn) { btn.classList.toggle('on', m===mode); }
   });
-  const content = document.getElementById('trend-content');
-  if (content && _trendNorm.length) content.innerHTML = buildTrendCharts(_trendNorm, mode);
+  applyTrendFilter();
 }
 
 function renderTrendCharts(norm, mode) {
