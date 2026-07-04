@@ -59,23 +59,28 @@
 
 <!-- AUTH PAGE -->
 <div id="pg-auth" class="page active" style="max-width:480px;margin:0 auto;padding:20px;">
-  <div style="text-align:center;margin:40px 0 28px;">
+  <div style="text-align:center;margin:32px 0 20px;">
     <div style="font-size:52px">⛳</div>
     <h1 style="margin-top:8px;">Golf<span class="accent">Tracker</span></h1>
-    <p class="muted" style="margin-top:4px;">Dein persönlicher Golf-Assistent</p>
+    <p class="muted" style="margin-top:4px;" id="auth-tagline">Dein persönlicher Golf-Assistent</p>
+    <div style="display:flex;justify-content:center;gap:10px;margin-top:12px;">
+      <button onclick="setLang('de')" id="lang-btn-de" style="font-size:20px;background:none;border:2px solid #4ade80;border-radius:8px;padding:3px 8px;cursor:pointer;">🇩🇪</button>
+      <button onclick="setLang('en')" id="lang-btn-en" style="font-size:20px;background:none;border:2px solid #2d4d38;border-radius:8px;padding:3px 8px;cursor:pointer;">🇬🇧</button>
+      <button onclick="setLang('it')" id="lang-btn-it" style="font-size:20px;background:none;border:2px solid #2d4d38;border-radius:8px;padding:3px 8px;cursor:pointer;">🇮🇹</button>
+    </div>
   </div>
   <div class="card" style="padding:24px;">
     <div style="display:flex;gap:8px;margin-bottom:20px;">
       <button class="btn btn-green btn-sm" id="tab-login" onclick="authTab('login')" style="flex:1">Einloggen</button>
       <button class="btn btn-dark btn-sm" id="tab-reg" onclick="authTab('reg')" style="flex:1">Registrieren</button>
     </div>
-    <div id="reg-fields">
-      <label class="label">Name</label>
+    <div id="reg-fields" style="display:none;">
+      <label class="label" id="auth-lbl-name">Name</label>
       <input id="auth-name" placeholder="Vorname Nachname"/>
     </div>
-    <label class="label">E-Mail</label>
+    <label class="label" id="auth-lbl-email">E-Mail</label>
     <input id="auth-email" type="email" placeholder="deine@email.de"/>
-    <label class="label">PIN (min. 4 Zeichen)</label>
+    <label class="label" id="auth-lbl-pin">PIN (min. 4 Zeichen)</label>
     <input id="auth-pin" type="password" placeholder="••••••"/>
     <div id="auth-err"></div>
     <button class="btn btn-green" onclick="authSubmit()" style="margin-top:16px;" id="auth-btn">Einloggen →</button>
