@@ -1090,7 +1090,9 @@ function renderHoleCard() {
   const sc = activeRound.scores[activePlayerId]||[];
   const hole = sc[currentHoleIdx]||{};
   const player = activeRound.players.find(p=>p.id===activePlayerId);
-  const st = strokesOnHole(player.courseHcp, hole.si||currentHoleIdx+1);
+  const isLadiesTee = (activeRound?.teeType||'') === 'red';
+  const siVal = (isLadiesTee && hole.si_ladies) ? hole.si_ladies : (hole.si||currentHoleIdx+1);
+  const st = strokesOnHole(player.courseHcp, siVal);
   const netPts = hole.gross ? sfNet(hole.gross,hole.par,st) : '—';
   const brutPts = hole.gross ? sfBrut(hole.gross,hole.par) : '—';
   const scoreColor = !hole.gross?'#6b9e7a':hole.gross<=hole.par-2?'#4ade80':hole.gross===hole.par-1?'#a3e635':hole.gross===hole.par?'#ecfdf5':hole.gross===hole.par+1?'#fbbf24':'#f87171';
@@ -1100,7 +1102,7 @@ function renderHoleCard() {
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
         <div>
           <div style="font-size:30px;font-weight:700;line-height:1;">Loch ${hole.holeNum}</div>
-          <div class="muted">Par ${hole.par} · SI ${hole.si} · ${hole.dist||0}m</div>
+          <div class="muted">Par ${hole.par} · SI ${(activeRound?.teeType==='red'&&hole.si_ladies)?hole.si_ladies:hole.si} · ${hole.dist||0}m</div>
           ${st!==0?`<div style="font-size:11px;color:${st>0?'#4ade80':'#f87171'};margin-top:2px;">${st>0?'+'+st+' Vorgabeschlag'+(st>1?'e':''):st+' Schlag abgeben'}</div>`:''}
         </div>
         <div style="text-align:right;">
