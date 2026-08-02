@@ -631,7 +631,12 @@ async function loginUser(u) {
   } catch(ex) { console.error('loginUser error:', ex); }
   document.getElementById('main-nav').style.display = 'flex';
   if (currentProfile?.is_admin) $('nav-admin').style.display = '';
-  showPage('pg-home');
+  // If active round running, resume directly — no extra click needed
+  if (activeRound) {
+    showPage('pg-round');
+  } else {
+    showPage('pg-home');
+  }
   // Show changelog if new version
   setTimeout(checkVersion, 800);
 }
@@ -885,6 +890,11 @@ function resumeRound() {
   $('round-active-banner').innerHTML = '';
   $('round-setup-form').style.display = 'none';
   $('hole-entry').style.display = 'block';
+  // Restore last hole index
+  if (currentUser) {
+    const savedHole = localStorage.getItem('gf_hole_'+currentUser.id);
+    if (savedHole !== null) currentHoleIdx = parseInt(savedHole)||0;
+  }
   renderHoleEntry();
 }
 
@@ -892,6 +902,7 @@ function discardRound() {
   if (!confirm('Runde verwerfen?')) return;
   activeRound = null;
   localStorage.removeItem('gf_ar_'+currentUser.id);
+  localStorage.removeItem('gf_hole_'+currentUser.id);
   renderRoundPage();
 }
 
@@ -1075,6 +1086,7 @@ function setActivePlayer(id) {
 
 function goToHole(i) {
   currentHoleIdx = i;
+  if (currentUser) localStorage.setItem('gf_hole_'+currentUser.id, i);
   renderHoleEntry();
 }
 
@@ -1084,6 +1096,8 @@ function changeHole(d) {
   renderHoleEntry();
   $('prev-hole').textContent = '← Loch ' + currentHoleIdx;
   $('next-hole').textContent = currentHoleIdx < max ? 'Loch '+(currentHoleIdx+2)+' →' : 'Fertig';
+  // Always persist current hole index
+  if (currentUser) localStorage.setItem('gf_hole_'+currentUser.id, currentHoleIdx);
 }
 
 function renderHoleCard() {
