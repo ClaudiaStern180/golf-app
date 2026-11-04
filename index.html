@@ -97,6 +97,7 @@
     <div style="text-align:right;">
       <div class="muted" style="font-size:10px;margin-bottom:2px;">HCP Index</div>
       <div id="home-hcp" class="big-num" style="cursor:pointer;background:#22c55e22;border:1px solid #4ade80;border-radius:10px;padding:4px 14px;" onclick="editHcp()">18.0</div>
+      <div id="home-hcp-start" class="muted" style="font-size:10px;margin-top:4px;"></div>
     </div>
   </div>
   <div id="home-active-round"></div>
@@ -204,6 +205,7 @@
 <!-- STATS PAGE -->
 <div id="pg-stats" class="page">
   <h2 id="stats-h2">Analyse</h2>
+  <div id="stat-year-bar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;"></div>
   <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
     <button class="tog on" onclick="showStat('verlauf',this)" id="stab-verlauf">📋 Verlauf</button>
     <button class="tog" onclick="showStat('trend',this)" id="stab-trend">📈 Trend</button>
@@ -271,8 +273,18 @@ const SUPABASE_URL = "https://dcpijdxzwbseoirhizki.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRjcGlqZHh6d2JzZW9pcmhpemtpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyOTMxNzksImV4cCI6MjA5NTg2OTE3OX0.8XYSmuUfXR-A4-dTEwL4FJFIVp2Ct4buXDIJx_Zs0o8";
 // ═══════════════════════════════════════════
 
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 const CHANGELOG = {
+  "1.4": {
+    title: "Was ist neu in v1.4?",
+    date: "November 2026",
+    changes: [
+      "📅 Statistik pro Jahr – Jahresfilter in der Analyse",
+      "📊 Jahresvergleich: HCP-Entwicklung, Netto, Brutto, Putts, GIR, Fairways",
+      "🏁 Start-HCP pro Saison – wird zum Stichtag automatisch übernommen",
+      "🧮 HCP-Sim nach WHS: letzte 20 Runden, ohne × 0,96"
+    ]
+  },
   "1.3": {
     title: "Was ist neu in v1.3?",
     date: "Juni 2026",
@@ -332,7 +344,7 @@ const LANG = {
     goal_putts:'Maximal 2 Putts pro Loch',
     goal_par3:'Bogey oder besser auf Par-3-Löchern',
     goal_par5:'Fast immer Par oder besser auf Par-5-Löchern',
-    no_data:'Noch keine Runden.',min2rounds:'Mindestens 2 Runden nötig.',
+    year_all:'Alle Jahre',year:'Jahr',year_compare:'Jahresvergleich',year_tap:'Jahr antippen für Details',season:'Saison',hcp_start:'Start-HCP',hcp_now:'Aktuell',no_rounds_year:'Noch keine Runden in',no_data:'Noch keine Runden.',min2rounds:'Mindestens 2 Runden nötig.',
     sim_title:'🧮 WHS HCP Simulation',sim_current:'Aktuell',sim_calc:'Berechnet',
     sim_diffs:'Score Differentials',sim_no_data:'Keine auswertbaren Runden.',
     tip_driving:'🏌️ Driving: Fairway-Quote unter 50% → Ausrichtung & Schwungtempo üben',
@@ -396,7 +408,7 @@ const LANG = {
     goal_fw:'Drive lands on the fairway',goal_gir:'Green in Regulation (par minus 2)',
     goal_putts:'Maximum 2 putts per hole',goal_par3:'Bogey or better on par-3 holes',
     goal_par5:'Almost always par or better on par-5 holes',
-    no_data:'No rounds yet.',min2rounds:'At least 2 rounds needed.',
+    year_all:'All years',year:'Year',year_compare:'Year comparison',year_tap:'Tap a year for details',season:'Season',hcp_start:'Start HCP',hcp_now:'Current',no_rounds_year:'No rounds yet in',no_data:'No rounds yet.',min2rounds:'At least 2 rounds needed.',
     sim_title:'🧮 WHS HCP Simulation',sim_current:'Current',sim_calc:'Calculated',
     sim_diffs:'Score Differentials',sim_no_data:'No scoreable rounds.',
     tip_driving:'🏌️ Driving: Fairway rate below 50% → practice alignment & swing tempo',
@@ -460,7 +472,7 @@ const LANG = {
     goal_fw:'Il drive atterra sul fairway',goal_gir:'Green in Regolazione (par meno 2)',
     goal_putts:'Massimo 2 putt per buca',goal_par3:'Bogey o meglio sulle buche par 3',
     goal_par5:'Quasi sempre par o meglio sulle buche par 5',
-    no_data:'Ancora nessun giro.',min2rounds:'Servono almeno 2 giri.',
+    year_all:'Tutti gli anni',year:'Anno',year_compare:'Confronto annuale',year_tap:'Tocca un anno per i dettagli',season:'Stagione',hcp_start:'HCP iniziale',hcp_now:'Attuale',no_rounds_year:'Ancora nessun giro nel',no_data:'Ancora nessun giro.',min2rounds:'Servono almeno 2 giri.',
     sim_title:'🧮 Simulazione HCP WHS',sim_current:'Attuale',sim_calc:'Calcolato',
     sim_diffs:'Differenziali di punteggio',sim_no_data:'Nessun giro valutabile.',
     tip_driving:'🏌️ Driving: Fairway sotto 50% → esercitare allineamento e ritmo',
@@ -529,6 +541,9 @@ let sb, currentUser, currentProfile;
 let courses = [], rounds = [], savedPlayers = [];
 let activeRound = null;
 let holeFilter = 'all';
+let statYear = null;          // null = noch nicht gewählt, 'all' = alle Jahre, sonst '2027' etc.
+let _activeStat = 'verlauf';
+let hcpHistory = [];          // [{valid_from:'2027-01-01', hcp_index:24.0, note}]
 let _trendMode = 'alle'; // 'all' | '9' | '18'
 let selectedPlayerIds = [];
 let selectedTee = "yellow";
@@ -557,6 +572,43 @@ const genId = () => Math.random().toString(36).slice(2,9);
 const calcCHcp = (idx,sr,cr,par) => Math.round(idx*(sr/113)+(cr-par));
 const sfNet = (g,par,st) => g ? Math.max(0,2+par+st-g) : 0;
 const sfBrut = (g,par) => g ? Math.max(0,2+par-g) : 0;
+const roundYear = r => String(r.date||r.created_at||'').slice(0,4);
+const roundYears = () => [...new Set(rounds.map(roundYear).filter(Boolean))].sort();
+const todayISO = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+function statRounds() {
+  if (!statYear || statYear==='all') return rounds;
+  return rounds.filter(r=>roundYear(r)===statYear);
+}
+// HCP-Startwert eines Jahres: erster Verlaufseintrag im Jahr, sonst HCP der ersten Runde im Jahr
+function hcpStartOfYear(y) {
+  const h = hcpHistory.filter(e=>String(e.valid_from).slice(0,4)===y).sort((a,b)=>a.valid_from<b.valid_from?-1:1)[0];
+  if (h) return parseFloat(h.hcp_index);
+  const r = rounds.filter(r=>roundYear(r)===y).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+  return r?.players?.[0]?.hcpIndex!=null ? parseFloat(r.players[0].hcpIndex) : null;
+}
+// HCP-Endwert eines Jahres: letzter Verlaufseintrag bis Jahresende (max. heute), sonst HCP der letzten Runde
+function hcpEndOfYear(y) {
+  const lim = (y+'-12-31') < todayISO() ? y+'-12-31' : todayISO();
+  const h = hcpHistory.filter(e=>e.valid_from<=lim && String(e.valid_from).slice(0,4)===y).sort((a,b)=>a.valid_from<b.valid_from?1:-1)[0];
+  if (h) return parseFloat(h.hcp_index);
+  if (y===todayISO().slice(0,4) && currentProfile?.hcp_index!=null) return parseFloat(currentProfile.hcp_index);
+  const r = rounds.filter(r=>roundYear(r)===y).sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  return r?.players?.[0]?.hcpIndex!=null ? parseFloat(r.players[0].hcpIndex) : null;
+}
+// Geplante HCP-Einträge (z.B. Start 2027) automatisch aktivieren, sobald das Datum erreicht ist
+async function applyScheduledHcp() {
+  if (!currentProfile || !hcpHistory.length) return;
+  const due = hcpHistory.filter(e=>e.valid_from<=todayISO()).sort((a,b)=>a.valid_from<b.valid_from?1:-1)[0];
+  if (!due) return;
+  const key = 'gf_hcp_applied_'+currentUser.id;
+  const marker = due.id || (due.valid_from+'|'+due.hcp_index);
+  if (localStorage.getItem(key)===String(marker)) return;
+  if (parseFloat(currentProfile.hcp_index)!==parseFloat(due.hcp_index)) {
+    await sb.from('profiles').update({hcp_index:due.hcp_index}).eq('id',currentUser.id);
+    currentProfile.hcp_index = parseFloat(due.hcp_index);
+  }
+  localStorage.setItem(key, String(marker));
+}
 const strokesOnHole = (chcp,si) => chcp>=0 ? Math.floor(chcp/18)+(si<=chcp%18?1:0) : (si<=Math.abs(chcp)?-1:0);
 
 function showPage(id) {
@@ -624,6 +676,8 @@ async function loginUser(u) {
     ]);
     currentProfile = prof;
     rounds = rds;
+    hcpHistory = await sb.from('hcp_history').select('*').eq('user_id',u.id).order('valid_from').then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+    await applyScheduledHcp();
     savedPlayers = sps;
     courses = crs;
     const ar = localStorage.getItem('gf_ar_'+u.id);
@@ -655,13 +709,21 @@ async function editHcp() {
   if (isNaN(hcp)) return;
   await sb.from('profiles').update({hcp_index:hcp}).eq('id',currentUser.id);
   if (currentProfile) currentProfile.hcp_index = hcp;
-  $('home-hcp').textContent = hcp.toFixed(1);
+  const {data} = await sb.from('hcp_history').insert({user_id:currentUser.id,valid_from:todayISO(),hcp_index:hcp,note:'manuell'}).select().single();
+  if (data) { hcpHistory.push(data); localStorage.setItem('gf_hcp_applied_'+currentUser.id, String(data.id)); }
+  renderHome();
 }
 
 // ── HOME ──
 function renderHome() {
   $('home-greeting').textContent = '👋 ' + (currentProfile?.display_name||'Spieler');
   $('home-hcp').textContent = parseFloat(currentProfile?.hcp_index||18).toFixed(1);
+  const curY = todayISO().slice(0,4);
+  const startNow = hcpHistory.length ? hcpStartOfYear(curY) : null;
+  const nextStart = hcpHistory.filter(e=>e.valid_from>todayISO()).sort((a,b)=>a.valid_from<b.valid_from?-1:1)[0];
+  $('home-hcp-start').innerHTML = nextStart
+    ? `${t('hcp_start')} ${String(nextStart.valid_from).slice(0,4)}: <b style="color:#4ade80;">${parseFloat(nextStart.hcp_index).toFixed(1)}</b>`
+    : (startNow!=null ? `${t('hcp_start')} ${curY}: ${startNow.toFixed(1)}` : '');
   [['lbl-rounds','rounds'],['lbl-avg-netto','avg_netto'],['lbl-best-netto','best_netto'],
    ['lbl-avg-brutto','avg_brutto'],['lbl-best-brutto','best_brutto']].forEach(([id,key])=>{
     const el=document.getElementById(id); if(el) el.textContent=t(key);
@@ -1201,7 +1263,26 @@ function showStat(id, btn) {
   $('stat-'+id).style.display='block';
   document.querySelectorAll('#pg-stats .tog').forEach(b=>b.classList.remove('on'));
   if(btn) btn.classList.add('on');
+  _activeStat = id;
   renderStatSection(id);
+}
+
+function renderYearBar() {
+  const years = roundYears();
+  const curY = todayISO().slice(0,4);
+  if (statYear===null) statYear = years.includes(curY) ? curY : (years[years.length-1] || 'all');
+  const opts = [...years];
+  if (!opts.includes(curY)) opts.push(curY);
+  hcpHistory.forEach(e=>{ const y=String(e.valid_from).slice(0,4); if (y && !opts.includes(y)) opts.push(y); });
+  opts.sort();
+  const bar = $('stat-year-bar'); if (!bar) return;
+  bar.innerHTML = [...opts.map(y=>[y,'📅 '+y]), ['all','🔀 '+t('year_all')]].map(([v,l])=>
+    `<button class="tog${statYear===v?' on':''}" onclick="setStatYear('${v}')" style="font-size:11px;padding:4px 10px;">${l}</button>`).join('');
+}
+function setStatYear(y) {
+  statYear = y;
+  renderYearBar();
+  renderStatSection(_activeStat);
 }
 
 function renderStats() {
@@ -1209,13 +1290,16 @@ function renderStats() {
     const el=document.getElementById('stab-'+id); if(el) el.textContent=t(key);
   });
   const h2=document.getElementById('stats-h2'); if(h2) h2.textContent=t('analysis');
-  renderStatSection('verlauf');
+  renderYearBar();
+  ['verlauf','trend','radar','tips','sim'].forEach(s=>{ $('stat-'+s).style.display = s===_activeStat?'block':'none'; const b=$('stab-'+s); if(b) b.classList.toggle('on', s===_activeStat); });
+  renderStatSection(_activeStat);
 }
 
 function renderStatSection(id) {
-  const norm = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
+  if (id==='sim') return renderSim();
+  const norm = statRounds().map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
   const allSc = norm.flatMap(r=>(r.players||[]).flatMap(p=>(r.scores?.[p.id]||[]).map(h=>({...h,chcp:p.courseHcp}))));
-  if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">Noch keine Runden.</p></div>'; return; }
+  if (!norm.length) { $('stat-'+id).innerHTML='<div class="card" style="text-align:center;padding:30px;"><div style="font-size:40px;">📊</div><p class="muted" style="margin-top:10px;">'+(statYear&&statYear!=='all'?t('no_rounds_year')+' '+statYear+'.':t('no_data'))+'</p>'+(statYear&&statYear!=='all'&&hcpStartOfYear(statYear)!=null?'<p class="muted" style="font-size:12px;">'+t('hcp_start')+' '+statYear+': <b style="color:#4ade80;">'+hcpStartOfYear(statYear).toFixed(1)+'</b></p>':'')+'</div>'; return; }
 
   if (id==='verlauf') {
     const rows = norm.map((r,i)=>{const p=r.players?.[0];const t=r.totals?.[p?.id]||{};return{name:'R'+(i+1),date:new Date(r.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}),HCP:parseFloat(p?.hcpIndex||0),Netto:t.nettoStableford||0,Putts:t.putts||0};});
@@ -1224,7 +1308,7 @@ function renderStatSection(id) {
     const fwA=allSc.filter(h=>h.par!==3&&h.fairway!==null);const fwPct=fwA.length?Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100):0;
     const girA=allSc.filter(h=>h.gir!==null);const girPct=girA.length?Math.round(girA.filter(h=>h.gir).length/girA.length*100):0;
     const puttA=allSc.filter(h=>h.putts!=null);const avgPutts=puttA.length?puttA.reduce((s,h)=>s+h.putts,0)/puttA.length:0;
-    $('stat-verlauf').innerHTML = `
+    $('stat-verlauf').innerHTML = (statYear==='all' ? renderYearCompare() : renderSeasonCard(statYear, norm)) + `
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">Key Stats</div>
         ${[
@@ -1259,7 +1343,7 @@ function renderStatSection(id) {
   }
 
   if (id==='trend') {
-    const norm2 = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',teeType:r.tee_type||r.teeType||'yellow',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
+    const norm2 = statRounds().map(r=>({...r,courseName:r.course_name||r.courseName||'',teeType:r.tee_type||r.teeType||'yellow',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
     const sorted = [...norm2].sort((a,b)=>new Date(a.date)-new Date(b.date));
     $('stat-trend').innerHTML = `
       <div class="card">
@@ -1329,7 +1413,14 @@ function renderStatSection(id) {
       </div>`;
   }
 
-  if (id==='sim') {
+  if (id==='sim') { renderSim(); }
+}
+
+// WHS: Anzahl der besten Differentials + Korrektur je nach Anzahl Runden (max. letzte 20)
+const WHS_TABLE = {3:[1,-2],4:[1,-1],5:[1,0],6:[2,-1],7:[2,0],8:[2,0],9:[3,0],10:[3,0],11:[3,0],12:[4,0],13:[4,0],14:[4,0],15:[5,0],16:[5,0],17:[6,0],18:[6,0],19:[7,0],20:[8,0]};
+
+function renderSim() {
+  const norm = rounds.map(r=>({...r,courseName:r.course_name||r.courseName||'',numHoles:r.num_holes||r.numHoles||18,players:r.players||[],scores:r.scores||{},totals:r.totals||{},date:r.date||r.created_at}));
     const calcDiff = r => {
       const p=r.players?.[0]; const t=r.totals?.[p?.id]||{};
       if(!t.bruttoScore||!r.cr||!r.sr) return null;
@@ -1339,11 +1430,14 @@ function renderStatSection(id) {
       const diff = (t.bruttoScore - crAdj) * 113 / r.sr;
       return parseFloat((is9 ? diff*2 : diff).toFixed(1));
     };
-    const withDiff = norm.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null);
+    // WHS: nur die letzten 20 Runden zählen – jahresübergreifend
+    const withDiff = norm.map(r=>({...r,diff:calcDiff(r)})).filter(r=>r.diff!==null)
+      .sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,20);
     if(!withDiff.length){$('stat-sim').innerHTML='<div class="card muted" style="text-align:center;padding:20px;">Keine auswertbaren Runden (Brutto-Score benötigt).</div>';return;}
-    const allDiffs = withDiff.map(r=>r.diff).sort((a,b)=>a-b);
-    const best8 = allDiffs.slice(0,Math.min(8,allDiffs.length));
-    const curHcp = best8.length ? parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length*0.96).toFixed(1)) : null;
+    const [nBest, adj] = WHS_TABLE[Math.min(withDiff.length,20)] || [0,0];
+    const bestIds = new Set([...withDiff].sort((a,b)=>a.diff-b.diff).slice(0,nBest).map(r=>r.id));
+    const best8 = withDiff.filter(r=>bestIds.has(r.id)).map(r=>r.diff);
+    const curHcp = best8.length ? Math.min(54, parseFloat((best8.reduce((a,b)=>a+b,0)/best8.length + adj).toFixed(1))) : null;
     $('stat-sim').innerHTML = `
       <div class="card" style="margin-bottom:10px;">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:12px;">${t('sim_title')}</div>
@@ -1352,14 +1446,14 @@ function renderStatSection(id) {
           <div class="stat-box" style="display:flex;align-items:center;justify-content:center;"><div style="font-size:24px;color:#2d4d38;">→</div></div>
           <div class="stat-box"><div class="big-num">${curHcp!==null?curHcp.toFixed(1):'—'}</div><div class="muted" style="font-size:10px;">Berechnet</div></div>
         </div>
-        <div class="muted" style="font-size:11px;text-align:center;">Beste ${best8.length} von ${withDiff.length} Runden · × 0.96</div>
+        <div class="muted" style="font-size:11px;text-align:center;">${best8.length ? `Beste ${best8.length} der letzten ${withDiff.length} Runden${adj?` · Korrektur ${adj}`:''} (WHS, jahresübergreifend)` : `Mindestens 3 Runden nötig (aktuell ${withDiff.length})`}</div>
         ${withDiff.some(r=>(r.numHoles||18)<=9)?'<div style="font-size:10px;color:#fbbf24;text-align:center;margin-top:4px;">⚠️ 9-Loch Runden als 18-Loch-Äquivalent berechnet</div>':''}
       </div>
       <div class="card">
         <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">${t('sim_diffs')}</div>
         ${withDiff.map((r,i)=>{
   const t=r.totals?.[r.players?.[0]?.id]||{};
-  const isBest=allDiffs.indexOf(r.diff)<8;
+  const isBest=bestIds.has(r.id);
   const is9=(r.numHoles||18)<=9;
   const par=r.par||(is9?36:72);
   const overUnder=t.bruttoScore?(t.bruttoScore-par):null;
@@ -1387,13 +1481,62 @@ function renderStatSection(id) {
       <div style="text-align:right;flex-shrink:0;margin-left:10px;">
         <div style="font-size:22px;font-weight:700;color:${isBest?'#4ade80':'#6b9e7a'};">${r.diff>0?'+'+r.diff:r.diff}</div>
         <div style="font-size:9px;color:#6b9e7a;">Differential</div>
-        ${isBest?'<div style="font-size:9px;color:#4ade80;font-weight:600;">★ top 8</div>':''}
+        ${isBest?'<div style="font-size:9px;color:#4ade80;font-weight:600;">★ zählt</div>':''}
         ${is9?'<div style="font-size:9px;color:#fbbf24;">9L</div>':''}
       </div>
     </div>
   </div>`;}).join('')}
       </div>`;
-  }
+}
+
+// ── SAISON / JAHRESVERGLEICH ──
+function yearStats(list) {
+  const pts = list.map(r=>r.totals?.[r.players?.[0]?.id]||{});
+  const sc = list.flatMap(r=>{const p=r.players?.[0]; return p ? (r.scores?.[p.id]||[]) : [];});
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const fwA=sc.filter(h=>h.par!==3&&h.fairway!=null), girA=sc.filter(h=>h.gir!=null), puA=sc.filter(h=>h.putts!=null);
+  return {
+    n: list.length,
+    netto: avg(pts.map(t=>t.nettoStableford||0)),
+    brutto: avg(pts.map(t=>t.bruttoStableford||0)),
+    putts: puA.length ? puA.reduce((x,h)=>x+h.putts,0)/puA.length : null,
+    gir: girA.length ? Math.round(girA.filter(h=>h.gir).length/girA.length*100) : null,
+    fw: fwA.length ? Math.round(fwA.filter(h=>h.fairway).length/fwA.length*100) : null,
+  };
+}
+const fmt = (v,d=1,suf='') => v==null ? '—' : v.toFixed(d)+suf;
+
+function renderSeasonCard(y, list) {
+  const st = yearStats(list), s = hcpStartOfYear(y), e = hcpEndOfYear(y);
+  const delta = (s!=null&&e!=null) ? e-s : null;
+  return `<div class="card" style="margin-bottom:10px;">
+    <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:10px;">📅 ${t('season')} ${y}</div>
+    <div class="grid3" style="text-align:center;">
+      <div class="stat-box"><div class="big-num">${fmt(s)}</div><div class="muted" style="font-size:10px;">${t('hcp_start')}</div></div>
+      <div class="stat-box"><div class="big-num">${fmt(e)}</div><div class="muted" style="font-size:10px;">${t('hcp_now')}</div></div>
+      <div class="stat-box"><div class="big-num" style="color:${delta==null?'inherit':delta<=0?'#4ade80':'#f87171'};">${delta==null?'—':(delta>0?'+':'')+delta.toFixed(1)}</div><div class="muted" style="font-size:10px;">Δ HCP</div></div>
+    </div>
+    <div class="muted" style="font-size:11px;text-align:center;margin-top:8px;">${st.n} ${t('rounds')} · ⌀ Netto ${fmt(st.netto)} · ⌀ Brutto ${fmt(st.brutto)}</div>
+  </div>`;
+}
+
+function renderYearCompare() {
+  const years = roundYears();
+  if (years.length < 2) return '';
+  const rows = years.map(y=>({y, ...yearStats(rounds.filter(r=>roundYear(r)===y)), s:hcpStartOfYear(y), e:hcpEndOfYear(y)}));
+  const th = 'style="text-align:right;padding:4px 3px;font-weight:600;color:#6b9e7a;font-size:10px;"';
+  const td = 'style="text-align:right;padding:6px 3px;white-space:nowrap;"';
+  return `<div class="card" style="margin-bottom:10px;overflow-x:auto;">
+    <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;">📊 ${t('year_compare')}</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr><th ${th.replace('right','left')}>${t('year')}</th><th ${th}>${t('rounds')}</th><th ${th}>HCP</th><th ${th}>⌀ Netto</th><th ${th}>⌀ Brutto</th><th ${th}>Putts/L</th><th ${th}>GIR</th><th ${th}>FW</th></tr>
+      ${rows.map(r=>`<tr style="border-top:1px solid #173320;cursor:pointer;" onclick="setStatYear('${r.y}')">
+        <td style="padding:6px;font-weight:600;">${r.y}</td><td ${td}>${r.n}</td>
+        <td ${td}>${fmt(r.s)}→${fmt(r.e)}</td><td ${td}>${fmt(r.netto)}</td><td ${td}>${fmt(r.brutto)}</td>
+        <td ${td}>${fmt(r.putts,2)}</td><td ${td}>${fmt(r.gir,0,'%')}</td><td ${td}>${fmt(r.fw,0,'%')}</td></tr>`).join('')}
+    </table>
+    <div class="muted" style="font-size:10px;margin-top:6px;">👆 ${t('year_tap')}</div>
+  </div>`;
 }
 
 // ── SERVICE ──
